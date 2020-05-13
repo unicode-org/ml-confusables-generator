@@ -1,0 +1,12 @@
+[submodule "harfpy"]
+	path = harfpy
+	url = https://github.com/ldo/harfpy.git
+[submodule "qahirah"]
+	path = qahirah
+	url = https://github.com/ldo/qahirah.git
+[submodule "python_freetype"]
+	path = python_freetype
+	url = https://github.com/ldo/python_freetype.git
+[submodule "pybidi"]
+	path = pybidi
+	url = https://github.com/ldo/pybidi.git
