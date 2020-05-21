@@ -1,0 +1,10 @@
+#*#
+*.lib
+*.log
+*.pyc
+*.user
+*.vcproj
+*.vcxproj
+*.vcxproj.filters
+*.xcodeproj
+test_out/
