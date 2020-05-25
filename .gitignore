@@ -7,4 +7,4 @@
 *.vcxproj
 *.vcxproj.filters
 *.xcodeproj
-test_out/
+img_out/
