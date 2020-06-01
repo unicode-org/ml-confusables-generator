@@ -1,8 +1,8 @@
 r"""Visual (image) generation module for confusable detection.
 
-You can use vis_gen.py as a command-line tool:
-$ python3 vis_gen.py --font_name "Noto Sans CJK TC" \
-    --code_point_range '\u6400', '\u64ff'
+To use vis_gen.py as a command-line tool:
+$ python3 vis_gen.py --font_size 32 --image_size 40 \
+    --font_name "Noto Sans CJK TC" --code_point_range '\u6400', '\u64ff'
 """
 
 import os
