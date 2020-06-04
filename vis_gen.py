@@ -21,53 +21,44 @@ class VisGen:
         >>> vg.visualize_range(start='\u6400', end='\u64ff')
         >>> vg.font_name = "Noto Serif CJK SC"
         >>> vg.font_size = 24
+        >>> vg.grayscale = True
         >>> vg.visualize_single('\u6400')
 
     """
 
     def __init__(self, font_size=36, image_size=40,
-                 font_name="Noto Sans CJK SC", out_dir="img_out"):
+                 font_name="Noto Sans CJK SC", out_dir="img_out",
+                 grayscale=False):
         """Store info about font_size, image_size, out_dir.
         Search and find specified font_name.
-
-        Assertion:
-            1. both font_size and image_size are larger than 0
-            2. font_size is smaller than image_size
-            3. font_face exists in the freetype library
 
         Args:
             font_size: Int, size of the font
             image_size: Int, height and width of the output image (in pixel)
             font_face: Str, name of the font face
-            out_dir: Str, relative path the output directory.
+            out_dir: Str, relative path the output directory
+            grayscale: Bool, whether to output grayscale or rgb image
 
         Raises:
+            (In setters)
             ValueError: if font_size <= 0 or image_size <= 0
             ValueError: if font_size < image_size
             ValueError: if specified font_name cannot be found
         """
         # Args: font_size, image_size, out_dir
-        # Check font_size and image_size
-        if font_size <= 0 or image_size <= 0:
-            raise ValueError('Expect both font_size and image_size to be larger'
-                             'than 0.')
-        # Check that image_size is larger than font_size
-        if font_size > image_size:
-            raise ValueError('Expect font_size to be smaller than image_size.')
-        # Set properties
         self.image_size = image_size
         self.font_size = font_size
         self.out_dir = out_dir
         
         # Args: font_name, __ft, __font_face
-        # Find and check freetype font face
+        # Set freetype library
         self.__ft = qah.get_ft_lib()
-        ft_face = self.__ft.find_face(font_name) # temporary
-        if ft_face.family_name != font_name:
-            raise ValueError("Font {} cannot be found.".format(font_name))
-        # Set property
+        # __font_face is set in the setter for font_name
         self.font_name = font_name
-        self.__font_face = qah.FontFace.create_for_ft_face(ft_face)
+
+        # Arg: grayscale
+        self.grayscale = grayscale
+
         
     @property
     def font_size(self):
@@ -84,6 +75,10 @@ class VisGen:
     @property
     def out_dir(self):
         return self.__out_dir
+
+    @property
+    def grayscale(self):
+        return self.__grayscale
 
     @font_size.setter
     def font_size(self, font_size):
@@ -118,6 +113,20 @@ class VisGen:
     @out_dir.setter
     def out_dir(self, out_dir):
         self.__out_dir = out_dir
+
+    @grayscale.setter
+    def grayscale(self, grayscale):
+        self.__grayscale = grayscale
+        # Configure format and color according to grayscale option
+        if grayscale:
+            self.__cairo_format = CAIRO.FORMAT_A8 # 8 bits grayscale format
+            self.__canvas_color = Colour.grey(0,0) # grey(i,a) => rgba(i,i,i,a)
+            self.__text_color = Colour.grey(0,1) # Only alpha value matters
+        else:
+            self.__cairo_format = CAIRO.FORMAT_RGB24
+            self.__canvas_color = Colour.x11["white"] # /usr/share/X11/rgb.txt
+            self.__text_color = Colour.x11["black"]
+
     
     def visualize_range(self, start, end, x=None, y=None):
         """Render text images from start code point to end code point and write
@@ -149,14 +158,14 @@ class VisGen:
         font_dir_abs = os.path.join(os.getcwd(), self.out_dir,
                                     self.font_name.replace(" ", "_"))
         if not os.path.isdir(font_dir_abs):
-           print("{} does not exist, creating directory.".format(font_dir_abs))
-           try:
-               os.mkdir(font_dir_abs)
-           except OSError:
-               print("Creation of directory {} failed.".format(font_dir_abs))
-               raise
-           else:
-               print("New directory successfully created")
+            print("{} does not exist, creating directory.".format(font_dir_abs))
+            try:
+                os.mkdir(font_dir_abs)
+            except OSError:
+                print("Creation of directory {} failed.".format(font_dir_abs))
+                raise
+            else:
+                print("New directory successfully created")
 
         # Compute ord for start and end code points
         try:
@@ -184,13 +193,13 @@ class VisGen:
         print("Images stored in directory {}.".format(font_dir_abs))
 
     def visualize_single(self, code_point, check_out_dir=True, x=None,
-                            y=None, grayscale=False):
+                            y=None):
         """Write rendered text image for specific code point to output
         directory, text is positioned at (x, y). If both x and y are set to None
         (default), the text will be centered.
 
         Args:
-            code_pint: Str, single unicode code point
+            code_point: Str, single unicode code point
             check_out_dir: Bool, set True if need to check output directory
             x: Int, x coordinate of the position of text, in number of pixels.
             y: Int, y coordinate of the position of text, in number of pixels.
@@ -227,27 +236,17 @@ class VisGen:
                    raise
                else:
                    print("New directory successfully created")
-        
-        # Configure format and color according to grayscale option
-        if grayscale:
-            cairo_format = CAIRO.FORMAT_A8 # 8 bits grayscale format
-            canvas_color = Colour.grey(0,0) # grey(i,a) => rgba(i,i,i,a)
-            text_color = Colour.grey(0,1) # Only alpha value matters to grayscale colour
-        else:
-            cairo_format = CAIRO.FORMAT_RGB24
-            canvas_color = Colour.x11["white"] # See /usr/share/X11/rgb.txt
-            text_color = Colour.x11["black"]
 
         # Create and configure ImageSurface
         figure_dimensions = Vector(self.image_size, self.image_size)
-        pix = qah.ImageSurface.create(format=cairo_format,
+        pix = qah.ImageSurface.create(format=self.__cairo_format,
                                       dimensions=figure_dimensions)
 
         # Create context
         ctx = qah.Context.create(pix)
-        ctx.set_source_colour(canvas_color)
+        ctx.set_source_colour(self.__canvas_color)
         ctx.paint()
-        ctx.set_source_colour(text_color)
+        ctx.set_source_colour(self.__text_color)
         ctx.set_font_face(self.__font_face)
         ctx.set_font_size(self.font_size)
 
@@ -263,14 +262,15 @@ class VisGen:
         # Show text and write to file
         ctx.show_text(code_point)
         pix.flush()
-        pix.write_to_png(os.path.join(font_dir_abs, str(ord(code_point))+".png"))
+        pix.write_to_png(os.path.join(font_dir_abs, str(ord(code_point)) +
+                                      ".png"))
 
     def position_text(self, context, text, x, y):
         """Put text in the intended position (relative to the origin)."
         
         Args:
             context: Qahirah context for the selected font and text size
-            text: Unicode codepint for the text (character intended to be drawn)
+            text: Unicode codepoint for the text (character)
             x: X coordinate for the intended position
             y: Y coordinate for the intended position
         """
@@ -287,7 +287,7 @@ class VisGen:
     
         Args:
             context: Qahirah context for the selected font and text size
-            text: Unicode code point for the text (character intended to be drawn)
+            text: Unicode code point for the text (character)
         """
     
         # Calculate how much to move on x and y axis
@@ -308,16 +308,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Usage: \n',
                                      formatter_class=formatter)
     parser.add_argument('--font_size', type=int, default=36, required=False,
-                        nargs=1, help='Font size')
+                        nargs=1, help='Font size.')
     parser.add_argument('--image_size', type=int, default=40, required=False,
-                        nargs=1, help='Image height and width (in pixels)')
+                        nargs=1, help='Image height and width (in pixels).')
     parser.add_argument('--font_name', type=str, default="Noto Sans CJK SC",
-                        required=False, nargs=1, help="Font name")
-    parser.add_argument('--out_dir', type=str, default="img_out", required=False,
-                        nargs=1, help="Relative path to output directory")
+                        required=False, nargs=1, help="Font name.")
+    parser.add_argument('--out_dir', type=str, default="img_out",
+                        required=False, nargs=1,
+                        help="Relative path to output directory.")
     parser.add_argument('--code_point_range', type=str, required=True, nargs=2,
                         help="Start and end of the range of code points to "
-                             "visualize")
+                             "visualize.")
+    parser.add_argument('--grayscale', type=bool, required=False, nargs=1,
+                        help="Whether to output grayscale or rgb image.")
     args = parser.parse_args()
     
     vg = VisGen(font_size=args.font_size, image_size=args.image_size,
@@ -327,5 +330,4 @@ if __name__ == "__main__":
 
 """TODO: - Configure root directory for project.
           - Write to buffer instead of file.
-          - Grayscale image.
           - Tofu and blank detection."""
