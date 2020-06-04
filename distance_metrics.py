@@ -40,11 +40,19 @@ def naive_distance(img1, img2):
 
 
 if __name__ == "__main__":
-    img1 = np.asarray(Image.open('img_out/Noto_Sans_CJK_SC/63847.png'))
-    img1 = img1.mean(axis=2)
+    ord_range = [24049, 24050, 24051, 24052, 24053]
     
-    img2 = np.asarray(Image.open('img_out/Noto_Sans_CJK_SC/23506.png'))
-    img2 = img2.mean(axis=2)
+    for i in ord_range:
+        for j in ord_range:
+            im1 = np.asarray(Image.open('img_out/Noto_Sans_CJK_SC/'+str(i)+'.png')).mean(axis=2)
+            im2 = np.asarray(Image.open('img_out/Noto_Sans_CJK_SC/'+str(j)+'.png')).mean(axis=2)
+            print(chr(i)+' '+chr(j)+' '+str(naive_distance(im1, im2)))
+
+    #im1 = np.asarray(Image.open('img_out/Noto_Sans_CJK_SC/63847.png'))
+    #im1 = im1.mean(axis=2)
     
-    dis = naive_distance(img1, img2)
-    import pdb;pdb.set_trace()
+    #im2 = np.asarray(Image.open('img_out/Noto_Sans_CJK_SC/23506.png'))
+    #im2 = im2.mean(axis=2)
+    
+    #dis = naive_distance(im1, im2)
+    #import pdb;pdb.set_trace()

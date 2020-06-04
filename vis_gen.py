@@ -184,7 +184,7 @@ class VisGen:
         print("Images stored in directory {}.".format(font_dir_abs))
 
     def visualize_single(self, code_point, check_out_dir=True, x=None,
-                            y=None):
+                            y=None, grayscale=False):
         """Write rendered text image for specific code point to output
         directory, text is positioned at (x, y). If both x and y are set to None
         (default), the text will be centered.
@@ -198,6 +198,7 @@ class VisGen:
         Raises:
             OSError: if specified directory cannot be created
         """
+        # font_dir_abs: absolute path to output directory
         font_dir_abs = os.path.join(os.getcwd(), self.out_dir,
                                     self.font_name.replace(" ", "_"))
         if check_out_dir:
@@ -226,17 +227,27 @@ class VisGen:
                    raise
                else:
                    print("New directory successfully created")
+        
+        # Configure format and color according to grayscale option
+        if grayscale:
+            cairo_format = CAIRO.FORMAT_A8 # 8 bits grayscale format
+            canvas_color = Colour.grey(0,0) # grey(i,a) => rgba(i,i,i,a)
+            text_color = Colour.grey(0,1) # Only alpha value matters to grayscale colour
+        else:
+            cairo_format = CAIRO.FORMAT_RGB24
+            canvas_color = Colour.x11["white"] # See /usr/share/X11/rgb.txt
+            text_color = Colour.x11["black"]
 
         # Create and configure ImageSurface
         figure_dimensions = Vector(self.image_size, self.image_size)
-        pix = qah.ImageSurface.create(format=CAIRO.FORMAT_RGB24,
+        pix = qah.ImageSurface.create(format=cairo_format,
                                       dimensions=figure_dimensions)
 
         # Create context
         ctx = qah.Context.create(pix)
-        ctx.set_source_colour(Colour.x11["white"])
+        ctx.set_source_colour(canvas_color)
         ctx.paint()
-        ctx.set_source_colour(Colour.x11["black"])
+        ctx.set_source_colour(text_color)
         ctx.set_font_face(self.__font_face)
         ctx.set_font_size(self.font_size)
 
@@ -302,7 +313,7 @@ if __name__ == "__main__":
                         nargs=1, help='Image height and width (in pixels)')
     parser.add_argument('--font_name', type=str, default="Noto Sans CJK SC",
                         required=False, nargs=1, help="Font name")
-    parser.add_argument('--out_dir', type=str, default="test", required=False,
+    parser.add_argument('--out_dir', type=str, default="img_out", required=False,
                         nargs=1, help="Relative path to output directory")
     parser.add_argument('--code_point_range', type=str, required=True, nargs=2,
                         help="Start and end of the range of code points to "
