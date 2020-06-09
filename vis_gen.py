@@ -16,7 +16,7 @@ class VisGen:
     """An character image generator for a specific font face.
     
     To use:
-        >>> vg = VisGen(font_size = 28, image_size=36, \
+        >>> vg = VisGen(font_size=28, image_size=36, \
                         font_name="Noto Sans CJK SC", out_dir="test_out")
         >>> vg.visualize_range(start='\u6400', end='\u64ff')
         >>> vg.font_name = "Noto Serif CJK SC"
@@ -120,12 +120,14 @@ class VisGen:
         # Configure format and color according to grayscale option
         if grayscale:
             self.__cairo_format = CAIRO.FORMAT_A8 # 8 bits grayscale format
-            self.__canvas_color = Colour.grey(0,0) # grey(i,a) => rgba(i,i,i,a)
-            self.__text_color = Colour.grey(0,1) # Only alpha value matters
+            self.__canvas_color = Colour.grey(0, 0) # grey(i,a) => rgba(i,i,i,a)
+            self.__text_color = Colour.grey(0, 1) # Only alpha value matters
         else:
             self.__cairo_format = CAIRO.FORMAT_RGB24
-            self.__canvas_color = Colour.x11["white"] # /usr/share/X11/rgb.txt
-            self.__text_color = Colour.x11["black"]
+            self.__canvas_color = Colour.grey(255, 1)
+            self.__text_color = Colour.grey(0, 1)
+            # If /usr/share/X11/rgb.txt exists, color can be specified by
+            # Colour.x11['colour_name']
 
     
     def visualize_range(self, start, end, x=None, y=None):
