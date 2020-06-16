@@ -1,6 +1,6 @@
 r"""Distance metrics module for confusable detection."""
 
-from PIL import Image
+import cv2
 import numpy as np
 import enum
 
@@ -62,11 +62,15 @@ class Distance:
         """
         if self.img_format == ImgFormat.RGB:
             metrics = {
-                'naive': self.__naive_distance_rgb
+                'manhattan': self.__manhattan_distance_rgb,
+                'sum_squared': self.__sum_squared_distance_rgb,
+                'cross_correlation': self.__cross_correlation_distance_rgb
             }
         elif self.img_format == ImgFormat.A1 or self.img_format == ImgFormat.A8:
             metrics = {
-                'naive': self.__naive_distance_gray
+                'manhattan': self.__manhattan_distance_gray,
+                'sum_squared': self.__sum_squared_distance_gray,
+                'cross_correlation': self.__cross_correlation_distance_gray
             }
         else:
             raise NotImplemented()
@@ -86,81 +90,175 @@ class Distance:
         """
 
         try:
-            img1 = np.asarray(Image.open(path1))
+            img1 = cv2.imread(path1)
         except FileNotFoundError:
             print('Image at path1 not found.')
             raise
 
         try:
-            img2 = np.asarray(Image.open(path2))
+            img2 = cv2.imread(path2)
         except FileNotFoundError:
             print('Image at path2 not found.')
             raise
 
         return metric(img1, img2)
 
-    def __naive_distance_rgb(self, img1, img2, average=True):
+    def __check_image_type_and_shape(self, img1, img2, dimension):
+        """Check two input images:
+            1. are the same type
+            2. have the same dimension
+            3. have the same shape
+
+        Args:
+            img1: np.ndarray, image array
+            img2: np.ndarray, image array
+
+        Raises:
+            ypeError: if img1 or img2 are not np.ndarray
+            ValueError: is img1 and img2 has non-compatible shape
+        """
+        # Check both images are nd.array
+        if (type(img1) != np.ndarray) or (type(img2) != np.ndarray):
+            raise TypeError('Expect both images to be of type numpy.ndarray.')
+        # Check both images have the same dimension
+        if len(img1.shape) != dimension or len(img2.shape) != dimension:
+            raise ValueError('Expect 2d array as input.')
+        # Check both images have the same shape
+        if img1.shape != img2.shape:
+            raise ValueError('Cannot calculate distance between two images with'
+                             ' different shape.')
+
+    def __manhattan_distance_rgb(self, img1, img2):
         """Get the average distance between every pair of corresponding
         pixels in the two images. Expect both images to be rgb image (the
         shape must be [image_height, image_width, 3]).
 
         Args:
-            img1: 3d numpy array representing the first image with shape
+            img1: np.ndarray, 3d array representing the first image with shape
                 [image_height, image_width, 3]
-            img2: 3d numpy array representing the second image.
-            average: Bool, whether or not to average over r, g, b channels
+            img2: np.ndarray, 3d array representing the second image
 
         Returns:
-            distance: Int, the pixel to pixel distance between the two images.
-
-        Raises:
-            TypeError: if img1 or img2 are not np.ndarray
-            ValueError: is img1 and img2 has non-compatible shape
+            distance: Float, the manhattan distance between the two images.
         """
+        # Check image type and shape
+        self.__check_image_type_and_shape(img1, img2, 3)
+
         # Split into 3 channels
         b1, g1, r1 = img1[:, :, 0], img1[:, :, 1], img1[:, :, 2]
         b2, g2, r2 = img2[:, :, 0], img2[:, :, 1], img2[:, :, 2]
 
-        # Calculate distance in 3 channels
+        # Calculate manhattan distance in 3 channels
         b_dis = self.__naive_distance_gray(b1, b2)
         g_dis = self.__naive_distance_gray(g1, g2)
         r_dis = self.__naive_distance_gray(r1, r2)
 
         total_dis = b_dis + g_dis + r_dis
-        distance = total_dis / 3 if average else total_dis
+        distance = total_dis / 3
         return distance
 
-    def __naive_distance_gray(self, img1, img2):
+    def __manhattan_distance_gray(self, img1, img2):
         """Get the sum of the distance between every pair of corresponding
         pixels in the two images. Expect both images to be grayscale image (the
         shape must be [image_height, image_width]).
 
         Args:
-            img1: 2d numpy array representing the first image with shape
+            img1: np.ndarray, 2d array representing the first image with shape
                 [image_height, image_width]
-            img2: 2d numpy array representing the second image.
+            img2: np.ndarray, 2d array representing the second image
 
         Returns:
-            distance: Int, the pixel to pixel distance between the two images.
-
-        Raises:
-            TypeError: if img1 or img2 are not np.ndarray
-            ValueError: is img1 and img2 has non-compatible shape
+            distance: Float, the manhattan distance between the two images.
         """
+        # Check image type and shape
+        self.__check_image_type_and_shape(img1, img2, 2)
 
-        if (type(img1) != np.ndarray) or (type(img2) != np.ndarray):
-            raise TypeError('Expect both images to be of type numpy.ndarray.')
-        if len(img1.shape) != 2 or len(img2.shape) != 2:
-            raise ValueError('Expect 2d array as input.')
-
-        if img1.shape != img2.shape:
-            raise ValueError('Cannot calculate distance between two images with'
-                             ' different shape.')
-
-        # Calculate naive distance
+        # Calculate manhattan distance
         total_pxs = img1.shape[0] * img1.shape[1]
         im_dis = np.absolute(img1 - img2)
         total_dis = np.sum(im_dis)
 
         distance = total_dis / total_pxs
+        return distance
+
+    def __sum_squared_distance_rgb(self, img1, img2):
+        """Get normalized sum squared difference.
+        distance = sum()
+
+        Args:
+            img1: np.ndarray, 3d array representing the first image with shape
+                [image_height, image_width, 3]
+            img2: np.ndarray, 3d array representing the second image
+
+        Returns:
+            distance: Float, sum square distance between two images
+        """
+        # Check image type and shape
+        self.__check_image_type_and_shape(img1, img2, 3)
+
+        # Calculate sum squared distance
+        distance = cv2.matchTemplate(img1, img2, cv2.TM_SQDIFF_NORMED)[0][0]
+        return distance
+
+    def __sum_squared_distance_gray(self, img1, img2):
+        """Get normalized sum squared difference.
+
+        Args:
+            img1: np.ndarray, 2d array representing the first image with shape
+                [image_height, image_width]
+            img2: np.ndarray, 2d array representing the second image
+
+        Returns:
+            distance: Float, sum square distance between two images
+        """
+        # Check image type and shape
+        self.__check_image_type_and_shape(img1, img2, 2)
+
+        # Simply replicate and stack up on the 3rd dimension
+        img1_rgb = np.stack((img1,)*3, axis=-1)
+        img2_rgb = np.stack((img2,)*3, axis=-1)
+
+        # Calculate sum squared distance
+        distance = cv2.matchTemplate(img1_rgb, img2_rgb,
+                                     cv2.TM_SQDIFF_NORMED)[0][0]
+        return distance
+
+    def __cross_correlation_distance_rgb(self, img1, img2):
+        """Get normalized cross correlation difference.
+
+        Args:
+            img1: np.ndarray, 3d array representing the first image with shape
+                [image_height, image_width, 3]
+            img2: np.ndarray, 3d array representing the second image
+
+        Returns:
+            distance: Float, cross correlation distance between two images
+        """
+        # Check image type and shape
+        self.__check_image_type_and_shape(img1, img2, 3)
+
+        # Calculate sum squared distance
+        distance = cv2.matchTemplate(img1, img2, cv2.TM_SQDIFF_NORMED)[0][0]
+        return distance
+
+    def __cross_correlation_distance_gray(self, img1, img2):
+        """Get normalized cross correlation difference.
+
+        Args:
+            img1: np.ndarray, 2d array representing the first image with shape
+                [image_height, image_width]
+            img2: np.ndarray, 2d array representing the second image
+
+        Returns:
+            distance: Float, cross correlation distance between two images
+        """
+        # Check image type and shape
+        self.__check_image_type_and_shape(img1, img2, 2)
+
+        # Simply replicate and stack up on the 3rd dimension
+        img1_rgb = np.stack((img1,) * 3, axis=-1)
+        img2_rgb = np.stack((img2,) * 3, axis=-1)
+
+        # Calculate sum squared distance
+        distance = cv2.matchTemplate(img1_rgb, img2_rgb, cv2.TM_SQDIFF_NORMED)[0][0]
         return distance

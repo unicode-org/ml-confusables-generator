@@ -8,4 +8,5 @@
 *.vcxproj
 *.vcxproj.filters
 *.xcodeproj
+*.ipynb_checkpoints
 img_out/

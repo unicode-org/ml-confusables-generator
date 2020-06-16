@@ -6,7 +6,7 @@
 # 3. Install other required python libraries
 
 apt-get -y update
-apt-get -y install libfreetype6 libcairo2
+apt-get -y install libfreetype6 libcairo2 libsm6 libxext6 libfontconfig1 libxrender1
 
 cd qahirah
 python3 setup.py install
@@ -16,4 +16,4 @@ cd ../python_freetype
 python3 setup.py install
 cd ..
 
-python3 -m pip install Pillow
+python3 -m pip install opencv-python
