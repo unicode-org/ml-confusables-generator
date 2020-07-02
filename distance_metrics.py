@@ -149,9 +149,9 @@ class Distance:
         b2, g2, r2 = img2[:, :, 0], img2[:, :, 1], img2[:, :, 2]
 
         # Calculate manhattan distance in 3 channels
-        b_dis = self.__naive_distance_gray(b1, b2)
-        g_dis = self.__naive_distance_gray(g1, g2)
-        r_dis = self.__naive_distance_gray(r1, r2)
+        b_dis = self.__manhattan_distance_gray(b1, b2)
+        g_dis = self.__manhattan_distance_gray(g1, g2)
+        r_dis = self.__manhattan_distance_gray(r1, r2)
 
         total_dis = b_dis + g_dis + r_dis
         distance = total_dis / 3

@@ -23,7 +23,7 @@
 # 
 # See https://unicode.org/charts/unihan.html
 
-# In[1]:
+# In[2]:
 
 
 get_ipython().system(' mkdir Unihan')
@@ -36,7 +36,7 @@ get_ipython().system(' python3 -m pip install pandas ')
 
 # ### Consider only KangXi radicals (no CJK Radicals Supplement)
 
-# In[2]:
+# In[1]:
 
 
 with open('Unihan/Unihan_RadicalStrokeCounts.txt') as f_in:
@@ -50,7 +50,7 @@ with open('Unihan/Unihan_RadicalStrokeCounts.txt') as f_in:
 
 # ## Analyze KangXi radicals
 
-# In[3]:
+# In[2]:
 
 
 # Mapping from radical number to radical string
@@ -59,7 +59,7 @@ for i in range(214):
     number_to_radical[i+1] = chr(int('0x2F00', 16) + i)
 
 
-# In[4]:
+# In[3]:
 
 
 # Mapping from radical number to radical stroke count
@@ -68,7 +68,7 @@ stroke_counts = [1]*6 + [2]*23 + [3]*31 + [4]*34 + [5]*23 + [6]*29 + [7]*20 + [8
 number_to_stoke_count = dict(zip(radical_numbers, stroke_counts))
 
 
-# In[5]:
+# In[4]:
 
 
 # Get data
@@ -88,28 +88,28 @@ df = pd.DataFrame(CRS_list, columns = ['code_point', 'character', 'radical_numbe
 df['total_strokes'] = df['radical_strokes'] + df['remaining_strokes']
 
 
-# In[6]:
+# In[5]:
 
 
 # Total number of code points
 len(CRS_list)
 
 
-# In[7]:
+# In[6]:
 
 
 # First 10 lines of the data
 df.head(10)
 
 
-# In[8]:
+# In[7]:
 
 
 # List all radicals
 list(set(df['radical']))
 
 
-# In[9]:
+# In[8]:
 
 
 # Check if all code points are unique in the dataset
@@ -117,7 +117,7 @@ code_points = df['code_point'].tolist()
 len(code_points) == len(set(code_points))
 
 
-# In[10]:
+# In[9]:
 
 
 # Get count for each radical
@@ -127,7 +127,7 @@ for i in range(214):
     radical_count[i+1] = radical_num_list.count(i+1)
 
 
-# In[11]:
+# In[10]:
 
 
 # Plot sorted radical count
@@ -148,7 +148,7 @@ plt.title('Radical Distribution')
 plt.show()
 
 
-# In[12]:
+# In[11]:
 
 
 # Get number of characters for specific stroke number
@@ -175,7 +175,7 @@ plt.show()
 
 # ## Select charset_1000
 
-# In[13]:
+# In[12]:
 
 
 dataset = set()
@@ -183,7 +183,7 @@ dataset = set()
 
 # ### Include all radicals
 
-# In[14]:
+# In[13]:
 
 
 radical_set = set(df['radical'])
@@ -193,7 +193,7 @@ dataset = dataset.union(radical_set)
 # ### Select character with basic and compound strokes
 # See https://en.wikipedia.org/wiki/Stroke_(CJK_character)
 
-# In[15]:
+# In[14]:
 
 
 # Add group of characters that includes all basic and compound strokes
@@ -205,7 +205,7 @@ dataset = set.union(dataset, set(basic_stroke_chars))
 
 # ### Select one other character for each radical
 
-# In[16]:
+# In[15]:
 
 
 import random
@@ -221,7 +221,7 @@ add_char_by_radical(df, dataset)
 
 # ### Select 2 characters for each storke number
 
-# In[17]:
+# In[16]:
 
 
 def add_char_by_stroke(df, dataset, repeat=1):
@@ -238,7 +238,7 @@ add_char_by_stroke(df, dataset, 2)
 # ### Select simple characters
 # As seen in the distribution, we want to make sure that special characters are selected in the dataset.
 
-# In[18]:
+# In[17]:
 
 
 chars = df.loc[df['total_strokes'] <= 4]['character'].tolist()
@@ -248,7 +248,7 @@ dataset = set.union(dataset, set(chars))
 
 # ### Select complicated characters
 
-# In[19]:
+# In[18]:
 
 
 chars = df.loc[df['total_strokes'] >= 27]['character'].tolist()
@@ -258,7 +258,7 @@ dataset = set.union(dataset, set(chars))
 
 # ### Fill dataset to 1000 randomly
 
-# In[20]:
+# In[19]:
 
 
 def add_char_up_to(df, dataset, n=1000):
@@ -268,15 +268,15 @@ def add_char_up_to(df, dataset, n=1000):
 add_char_up_to(df, dataset, 1000)
 
 
-# In[21]:
+# In[20]:
 
 
-charset_1k = dataset
+charset_1k = dataset.copy()
 
 
 # ## Select charset_2000
 
-# In[22]:
+# In[21]:
 
 
 add_char_by_radical(df, dataset, 2)
@@ -284,15 +284,15 @@ add_char_by_stroke(df, dataset, 4)
 add_char_up_to(df, dataset, 2000)
 
 
-# In[23]:
+# In[22]:
 
 
-charset_2k = dataset
+charset_2k = dataset.copy()
 
 
 # ## Select charset_4000
 
-# In[24]:
+# In[23]:
 
 
 add_char_by_radical(df, dataset, 4)
@@ -300,29 +300,29 @@ add_char_by_stroke(df, dataset, 8)
 add_char_up_to(df, dataset, 4000)
 
 
-# In[25]:
+# In[24]:
 
 
-charset_4k = dataset
+charset_4k = dataset.copy()
 
 
 # ## Generate randset_x
 
-# In[26]:
+# In[25]:
 
 
 dataset = set()
 add_char_up_to(df, dataset, 1000)
-randset_1k = dataset
+randset_1k = dataset.copy()
 add_char_up_to(df, dataset, 2000)
-randset_2k = dataset
+randset_2k = dataset.copy()
 add_char_up_to(df, dataset, 4000)
-randset_4k = dataset
+randset_4k = dataset.copy()
 
 
 # ### Compare distributions
 
-# In[27]:
+# In[26]:
 
 
 df_charset_1k = df[df['character'].isin(charset_1k)]
@@ -347,7 +347,7 @@ plt.title('Radical Distribution charset_1k')
 plt.show()
 
 
-# In[28]:
+# In[27]:
 
 
 df_randset_1k = df[df['character'].isin(randset_1k)]
@@ -372,7 +372,7 @@ plt.title('Radical Distribution randset_1k')
 plt.show()
 
 
-# In[29]:
+# In[28]:
 
 
 # Get number of characters for specific stroke number
@@ -395,7 +395,7 @@ plt.title('Number of strokes distribution charset_1k')
 plt.show()
 
 
-# In[30]:
+# In[29]:
 
 
 # Get number of characters for specific stroke number
@@ -420,7 +420,7 @@ plt.show()
 
 # ## Store datasets
 
-# In[31]:
+# In[30]:
 
 
 datasets = [charset_1k, charset_2k, charset_4k, randset_1k, randset_2k, randset_4k]
@@ -429,10 +429,4 @@ for i in range(6):
     with open(data_names[i]+'.txt', "w+") as f_out: 
         for char in datasets[i]:
             f_out.write('U+' + str(hex(ord(char)))[2:] + '\n')
-
-
-# In[ ]:
-
-
-
 
