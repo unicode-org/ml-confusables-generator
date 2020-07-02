@@ -9,8 +9,8 @@ import os
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 # Dataset Metadata
-TRAIN_DATA_DIR = 'charset_1k'
-TEST_DATA_DIR = 'charset_1k_test'
+TRAIN_DATA_DIR = 'data/charset_1k'
+TEST_DATA_DIR = 'data/charset_1k_test'
 LABEL_FILE = 'source/charset_1k.txt'
 NUM_TRAIN = 47900
 NUM_TEST = 100
@@ -19,7 +19,7 @@ NUM_TEST = 100
 HEIGHT = 20
 WIDTH = 20
 GRAYSCALE_IN = False
-GRAYSCALE_OUT = True
+GRAYSCALE_OUT = False
 
 # Train/test Specifications
 TRAIN_BATCH_SIZE = 32
@@ -35,19 +35,25 @@ RANDOM_ZOOM = True # See implementation
 MAX_ZOOM_PERCENT = 4
 ZOOM_STDDEV = 0.4
 
-# Labels list
+RESIZE = True
+RESIZE_HEIGHT = 32
+RESIZE_WIDTH = 32
+
+# Label conversion
 CLASS_NAMES = []
 with open(LABEL_FILE) as f:
     for line in f:
         code_point = line.split('\n')[0]
         CLASS_NAMES.append(code_point)
+NUM_CLASSES = len(CLASS_NAMES)
 
 def get_label(file_path):
     # Convert path to file name
     file_name = tf.strings.split(file_path, os.path.sep)[-1]
     # Derive label from file name
     class_name = tf.strings.split(file_name, '_')[0]
-    label = tf.reduce_min(tf.where(tf.equal(CLASS_NAMES, class_name)))
+    idx = tf.reduce_min(tf.where(tf.equal(CLASS_NAMES, class_name)))
+    label = tf.one_hot(idx, NUM_CLASSES)
     return label
 
 def decode_img(img):
@@ -114,56 +120,62 @@ def augment(img, label):
         idx = tf.cast(idx, tf.dtypes.int32)
         img = crops[idx]
 
+    # Resize image for compatibility with Keras model
+    # TODO: Add custom models to avoid resizing
+    if RESIZE:
+        img = tf.image.resize(img, (RESIZE_HEIGHT, RESIZE_WIDTH))
     return img, label
 
-def train_input_fn():
-    # Get filenames
-    data_dir = pathlib.Path(TRAIN_DATA_DIR)
-    list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
+def get_train_input_fn(input_name):
+    def train_input_fn():
+        # Get filenames
+        data_dir = pathlib.Path(TRAIN_DATA_DIR)
+        list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
 
-    # Get labeled dataset
-    ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
-    # Format conversion
-    ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
-                                  grayscale_out=GRAYSCALE_OUT))
-    # Data augmentation
-    ds = ds.map(augment, num_parallel_calls=AUTOTUNE)
-    # Prepare for tf.estimator
-    ds = ds.map(lambda img, label: ({'dense_input': img}, label))
+        # Get labeled dataset
+        ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
+        # Format conversion
+        ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
+                                      grayscale_out=GRAYSCALE_OUT))
+        # Data augmentation
+        ds = ds.map(augment, num_parallel_calls=AUTOTUNE)
+        # Prepare for tf.estimator
+        ds = ds.map(lambda img, label: ({input_name: img}, label))
 
-    # Shuffle, batch, repeat, prefetch
-    ds = ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE)
-    ds = ds.batch(TRAIN_BATCH_SIZE)
-    ds = ds.repeat()
-    ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
+        # Shuffle, batch, repeat, prefetch
+        ds = ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE)
+        ds = ds.batch(TRAIN_BATCH_SIZE)
+        ds = ds.repeat()
+        ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
 
-    return ds
+        return ds
+    return train_input_fn
 
-def test_input_fn():
-    # Get filenames
-    data_dir = pathlib.Path(TEST_DATA_DIR)
-    list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
+def get_eval_input_fn(input_name):
+    def eval_input_fn():
+        # Get filenames
+        data_dir = pathlib.Path(TEST_DATA_DIR)
+        list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
 
-    # Get labeled dataset
-    ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
-    # Format conversion
-    ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
-                                  grayscale_out=GRAYSCALE_OUT))
-    # Prepare for tf.estimator
-    ds = ds.map(lambda img, label: ({'dense_input': img}, label))
+        # Get labeled dataset
+        ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
+        # Format conversion
+        ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
+                                      grayscale_out=GRAYSCALE_OUT))
+        # Prepare for tf.estimator
+        ds = ds.map(lambda img, label: ({input_name: img}, label))
 
-    # Shuffle, batch, repeat, prefetch
-    ds = ds.batch(TEST_BATCH_SIZE)
-    ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
+        # Batch, prefetch
+        ds = ds.batch(TEST_BATCH_SIZE)
+        ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
 
-    return ds
-
-def val_input_fn():
-    return test_input_fn()
+        return ds
+    return eval_input_fn
 
 
 
 if __name__ == "__main__":
+    train_input_fn = get_train_input_fn(input_name = 'resnet50_input')
     train_ds = train_input_fn()
     for features_batch, labels_batch in train_ds.take(1):
         print(features_batch)
