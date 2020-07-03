@@ -26,6 +26,12 @@ LOSS_MAP = {
         tf.keras.losses.CategoricalCrossentropy,
 }
 
+# Pre-defined metrics
+METRIC_MAP = {
+    'Accuracy':
+    tf.keras.metrics.CategoricalAccuracy,
+}
+
 
 if __name__ == "__main__":
     model, input_name = create_full_model('MobileNetV2')
@@ -39,13 +45,19 @@ if __name__ == "__main__":
 
     loss = LOSS_MAP['CrossEntropy'](from_logits=True)
 
-    model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+    accuracy = METRIC_MAP['Accuracy']()
+    model.compile(optimizer=optimizer, loss=loss, metrics=[accuracy])
 
 
     estimator = tf.keras.estimator\
         .model_to_estimator(keras_model=model, model_dir='ckpts/MobileNetV2')
-    train_spec = tf.estimator.TrainSpec(input_fn=get_train_input_fn(input_name),
-                                        max_steps=30000)
-    eval_spec = tf.estimator.EvalSpec(input_fn=get_eval_input_fn(input_name))
+    # train_spec = tf.estimator.TrainSpec(input_fn=get_train_input_fn(input_name),
+    #                                     max_steps=30000)
+    # eval_spec = tf.estimator.EvalSpec(input_fn=get_eval_input_fn(input_name))
 
-    tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+    # tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+
+
+    # estimator.evaluate(input_fn=get_eval_input_fn(input_name), steps=100)
+    import pdb;pdb.set_trace()
+    estimator.predict(input_fn=get_eval_input_fn(input_name))

@@ -175,7 +175,7 @@ def get_eval_input_fn(input_name):
 
 
 if __name__ == "__main__":
-    train_input_fn = get_train_input_fn(input_name = 'resnet50_input')
+    train_input_fn = get_eval_input_fn(input_name = 'resnet50_input')
     train_ds = train_input_fn()
     for features_batch, labels_batch in train_ds.take(1):
         print(features_batch)
