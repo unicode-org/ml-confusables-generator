@@ -119,7 +119,9 @@ def augment(img, label):
         idx = tf.math.round(idx) # Bankers rounding again
         idx = tf.cast(idx, tf.dtypes.int32)
         img = crops[idx]
+    return img, label
 
+def resize(img, label):
     # Resize image for compatibility with Keras model
     # TODO: Add custom models to avoid resizing
     if RESIZE:
@@ -139,6 +141,8 @@ def get_train_input_fn(input_name):
                                       grayscale_out=GRAYSCALE_OUT))
         # Data augmentation
         ds = ds.map(augment, num_parallel_calls=AUTOTUNE)
+        # Resizing
+        ds = ds.map(resize, num_parallel_calls=AUTOTUNE)
         # Prepare for tf.estimator
         ds = ds.map(lambda img, label: ({input_name: img}, label))
 
@@ -162,6 +166,8 @@ def get_eval_input_fn(input_name):
         # Format conversion
         ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
                                       grayscale_out=GRAYSCALE_OUT))
+        # Resizing
+        ds = ds.map(resize, num_parallel_calls=AUTOTUNE)
         # Prepare for tf.estimator
         ds = ds.map(lambda img, label: ({input_name: img}, label))
 
