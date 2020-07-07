@@ -8,7 +8,7 @@ The wide range of characters supported by unicode poses security vulnerabilities
 - Make sure all submodules are updated: `git submodule update --init --recursive`
 
 ## Launch Docker container
-- In project source folder, run `./script/start.sh`
+- In project source folder, run `./scripts/start.sh`
 - In any browser, go to `localhost:8888`
 - Copy the token from terminal to browser to access Jupyter Notebook
 
