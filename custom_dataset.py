@@ -40,6 +40,7 @@ RESIZE_HEIGHT = 32
 RESIZE_WIDTH = 32
 
 # Label conversion
+ONE_HOT = False
 CLASS_NAMES = []
 with open(LABEL_FILE) as f:
     for line in f:
@@ -53,8 +54,11 @@ def get_label(file_path):
     # Derive label from file name
     class_name = tf.strings.split(file_name, '_')[0]
     idx = tf.reduce_min(tf.where(tf.equal(CLASS_NAMES, class_name)))
-    label = tf.one_hot(idx, NUM_CLASSES)
-    return label
+    if ONE_HOT:
+        label = tf.one_hot(idx, NUM_CLASSES)
+        return label
+    else:
+        return idx
 
 def decode_img(img):
     # Convert compressed string to a 3D uint8 tensor
@@ -66,6 +70,13 @@ def decode_img(img):
 def process_path(file_path):
     # Get label and image Tensor
     label = get_label(file_path)
+    img = tf.io.read_file(file_path)
+    img = decode_img(img)
+    return img, label
+
+def process_img_path(file_path):
+    """Returns image with filename as label."""
+    label = tf.strings.split(file_path, os.path.sep)[-1]
     img = tf.io.read_file(file_path)
     img = decode_img(img)
     return img, label
@@ -123,10 +134,77 @@ def augment(img, label):
 
 def resize(img, label):
     # Resize image for compatibility with Keras model
-    # TODO: Add custom models to avoid resizing
+    # TODO: Add custom CNN models to avoid resizing
     if RESIZE:
         img = tf.image.resize(img, (RESIZE_HEIGHT, RESIZE_WIDTH))
     return img, label
+
+def get_train_dataset(filter_size=16):
+    # Get filenames
+    data_dir = pathlib.Path(TRAIN_DATA_DIR)
+    list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
+
+    # Get labeled dataset
+    ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
+    # Filter using filter_size
+    labels = tf.constant(np.random.choice(1000, filter_size, replace=False))
+    ds = ds.filter(lambda img, label: tf.reduce_any(tf.equal(label,labels)))
+    # Format conversion
+    ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
+                                  grayscale_out=GRAYSCALE_OUT))
+    # Data augmentation
+    ds = ds.map(augment, num_parallel_calls=AUTOTUNE)
+    # Resizing
+    ds = ds.map(resize, num_parallel_calls=AUTOTUNE)
+
+
+    # Shuffle, batch, repeat, prefetch
+    ds = ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE)
+    ds = ds.batch(TRAIN_BATCH_SIZE)
+    ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
+
+    return ds
+
+def get_test_dataset():
+    # Get filenames
+    data_dir = pathlib.Path(TEST_DATA_DIR)
+    list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
+
+    # Get labeled dataset
+    ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
+    # Format conversion
+    ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
+                                  grayscale_out=GRAYSCALE_OUT))
+    # Resizing
+    ds = ds.map(resize, num_parallel_calls=AUTOTUNE)
+
+    # Batch, prefetch
+    ds = ds.batch(TEST_BATCH_SIZE)
+    ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
+
+    return ds
+
+def get_filename_dataset(data_dir):
+    """For prediciton only. No label file needed.
+        Given a directory of images, return datatset with images and filenames."""
+    # Get filenames
+    data_dir = pathlib.Path(data_dir)
+    list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
+
+    # Get FAKE labeled dataset
+    ds = list_ds.map(process_img_path, num_parallel_calls=AUTOTUNE)
+    # Format conversion
+    ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
+                                  grayscale_out=GRAYSCALE_OUT))
+    # Resizing
+    ds = ds.map(resize, num_parallel_calls=AUTOTUNE)
+
+    # Batch, prefetch
+    ds = ds.batch(1)
+    ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
+
+    return ds
+
 
 def get_train_input_fn(input_name):
     def train_input_fn():
