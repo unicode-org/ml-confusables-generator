@@ -22,10 +22,10 @@ GRAYSCALE_IN = False
 GRAYSCALE_OUT = False
 
 # Train/test Specifications
-TRAIN_BATCH_SIZE = 32
+TRAIN_BATCH_SIZE = 64
 TEST_BATCH_SIZE = 1
-SHUFFLE_BUFFER_SIZE = 1000 # higher: slower, better shuffling
-PREFETCH_BUFFER_SIZE = 2
+SHUFFLE_BUFFER_SIZE = 200 # higher: slower, better shuffling
+PREFETCH_BUFFER_SIZE = 20
 
 # Data Augmentation
 RANDOM_ROTATE = True # See implementation
@@ -139,16 +139,19 @@ def resize(img, label):
         img = tf.image.resize(img, (RESIZE_HEIGHT, RESIZE_WIDTH))
     return img, label
 
-def get_train_dataset(filter_size=16):
+def get_train_dataset(filter_size=None):
     # Get filenames
     data_dir = pathlib.Path(TRAIN_DATA_DIR)
     list_ds = tf.data.Dataset.list_files(str(data_dir / '*'))
 
     # Get labeled dataset
     ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
-    # Filter using filter_size
-    labels = tf.constant(np.random.choice(1000, filter_size, replace=False))
-    ds = ds.filter(lambda img, label: tf.reduce_any(tf.equal(label,labels)))
+
+    if filter_size:
+        # Filter using filter_size
+        labels = tf.constant(np.random.choice(1000, filter_size, replace=False))
+        ds = ds.filter(lambda img, label: tf.reduce_any(tf.equal(label,labels)))
+
     # Format conversion
     ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
                                   grayscale_out=GRAYSCALE_OUT))
@@ -197,11 +200,10 @@ def get_filename_dataset(data_dir):
     ds = ds.map(functools.partial(convert_format, grayscale_in=GRAYSCALE_IN,
                                   grayscale_out=GRAYSCALE_OUT))
     # Resizing
-    ds = ds.map(resize, num_parallel_calls=AUTOTUNE)
+    ds = ds.map(resize)
 
     # Batch, prefetch
     ds = ds.batch(1)
-    ds = ds.prefetch(buffer_size=PREFETCH_BUFFER_SIZE)
 
     return ds
 

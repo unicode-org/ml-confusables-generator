@@ -1,3 +1,4 @@
+r"""Pre-defined TensorFlow (Keras) models."""
 import tensorflow as tf
 import numpy as np
 
@@ -6,7 +7,7 @@ INPUT_SHAPE = (32, 32, 3)
 NUM_CLASSES = 1000
 
 # Enable pre-defined models
-MODLE_MAP = {
+MODEL_MAP = {
     'ResNet50': tf.keras.applications.ResNet50,
     'MobileNetV2': tf.keras.applications.MobileNetV2,
     'VGG16': tf.keras.applications.VGG16,
@@ -22,7 +23,7 @@ def create_full_model(model_name):
         full_model: tf.keras.Model, model not yet compiled.
         input_name: Str, name for the model input.
     """
-    base_model = MODLE_MAP[model_name](input_shape=INPUT_SHAPE,
+    base_model = MODEL_MAP[model_name](input_shape=INPUT_SHAPE,
                                        include_top=False)
     base_model.trainable = True
 

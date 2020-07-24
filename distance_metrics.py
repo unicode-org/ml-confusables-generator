@@ -17,7 +17,7 @@ class Distance:
 
     """
 
-    def __init__(self, img_format=ImgFormat.RGB, embedding_len=None):
+    def __init__(self, img_format=ImgFormat.RGB):
         """
 
         Args:
@@ -26,15 +26,10 @@ class Distance:
         """
 
         self.img_format = img_format
-        self.embedding_len = embedding_len
 
     @property
     def img_format(self):
         return self.__img_format
-
-    @property
-    def embedding_len(self):
-        return self.__embedding_len
 
     @img_format.setter
     def img_format(self, img_format):
@@ -42,17 +37,6 @@ class Distance:
             raise TypeError('Expect img_format to be a member of Format class.')
         else:
             self.__img_format = img_format
-
-    @embedding_len.setter
-    def embedding_len(self, embedding_len):
-        if embedding_len is None:
-            self.__embedding_len = embedding_len
-        elif not isinstance(embedding_len, int):
-            raise TypeError('Expect embedding_len to be an integer.')
-        elif embedding_len < 0:
-            raise ValueError('Expect embedding_len to be non-negative.')
-        else:
-            self.__embedding_len = embedding_len
 
     def get_metrics(self):
         """Return a dictionary of compatible distance names to functions.
@@ -72,36 +56,51 @@ class Distance:
                 'sum_squared': self.__sum_squared_distance_gray,
                 'cross_correlation': self.__cross_correlation_distance_gray
             }
+        elif self.img_format == ImgFormat.EMBEDDINGS:
+            metrics = {
+                'manhattan': self.__manhattan_distance_emb,
+                'euclidean': self.__euclidean_distance_emb
+            }
         else:
             raise NotImplemented()
 
         return metrics
 
-    def calculate_from_path(self, metric, path1, path2):
-        """Calculate distance between the two images specified by file path.
+    def __manhattan_distance_emb(self, emb1, emb2):
+        """Get the average distance between every pair of corresponding
+        pixels in the two images.
 
         Args:
-            metric: Function, distance metric to be used
-            path1: Str, path to the first image
-            path2: Str, path to the second image
+            emb1: np.ndarray, embeddings
+            emb2: np.ndarray, embeddings
 
-        Returns:
-            distance: Float, distance between the two images
+        Raises:
+            ypeError: if img1 or img2 are not np.ndarray
+            ValueError: is img1 and img2 has non-compatible shape
         """
+        # Check image type and shape
+        self.__check_image_type_and_shape(emb1, emb2, 1)
 
-        try:
-            img1 = cv2.imread(path1)
-        except FileNotFoundError:
-            print('Image at path1 not found.')
-            raise
+        dis = np.absolute(emb1 - emb2)
+        total_dis = np.sum(dis)
+        return total_dis
 
-        try:
-            img2 = cv2.imread(path2)
-        except FileNotFoundError:
-            print('Image at path2 not found.')
-            raise
+    def __euclidean_distance_emb(self, emb1, emb2):
+        """Get euclidean distance between two representations.
 
-        return metric(img1, img2)
+         Args:
+            emb1: np.ndarray, embeddings
+            emb2: np.ndarray, embeddings
+
+        Raises:
+            ypeError: if img1 or img2 are not np.ndarray
+            ValueError: is img1 and img2 has non-compatible shape
+        """
+        # Check image type and shape
+        self.__check_image_type_and_shape(emb1, emb2, 1)
+
+        total_dis = np.linalg.norm(emb1 - emb2)
+        return total_dis
 
     def __check_image_type_and_shape(self, img1, img2, dimension):
         """Check two input images:
@@ -262,3 +261,29 @@ class Distance:
         # Calculate sum squared distance
         distance = cv2.matchTemplate(img1_rgb, img2_rgb, cv2.TM_SQDIFF_NORMED)[0][0]
         return distance
+
+def calculate_from_path(metric, path1, path2):
+    """Calculate distance between the two images specified by file path.
+
+    Args:
+        metric: Function, distance metric to be used
+        path1: Str, path to the first image
+        path2: Str, path to the second image
+
+    Returns:
+        distance: Float, distance between the two images
+    """
+
+    try:
+        img1 = cv2.imread(path1)
+    except FileNotFoundError:
+        print('Image at path1 not found.')
+        raise
+
+    try:
+        img2 = cv2.imread(path2)
+    except FileNotFoundError:
+        print('Image at path2 not found.')
+        raise
+
+    return metric(img1, img2)

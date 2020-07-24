@@ -115,7 +115,7 @@ def train_triplet():
     latest = tf.train.latest_checkpoint(checkpoint_directory)
     model.load_weights(latest)
 
-    loss = LOSS_MAP['TripletSemiHard']()
+    loss = LOSS_MAP['TripletSemiHard'](margin=5000)
     model.compile(optimizer=optimizer, loss=loss)
 
     # import pdb; pdb.set_trace()
@@ -131,6 +131,101 @@ def train_triplet():
     # Evaluate the network
     results = model.predict(test_dataset)
 
+def train_triplet_from_scratch():
+    model, input_name = create_full_model('ResNet50')
+    model.summary()
+
+    optimizer = OPTIMIZER_MAP['Adam'](0.001)
+
+    loss = LOSS_MAP['TripletSemiHard']()
+    model.compile(optimizer=optimizer, loss=loss)
+
+    # import pdb; pdb.set_trace()
+    test_dataset = get_test_dataset()
+    for i in range(200):
+        print('Cycle #{}'.format(i))
+        train_dataset = get_train_dataset(filter_size=20)
+
+        history = model.fit(
+            train_dataset,
+            epochs=8
+        )
+    import pdb; pdb.set_trace()
+
+    # Evaluate the network
+    results = model.predict(test_dataset)
+
+def train_triplet_transfer():
+    model, input_name = create_full_model('ResNet50')
+    model.summary()
+
+    optimizer = OPTIMIZER_MAP['Adam'](0.001)
+
+    checkpoint_directory = "ckpts/ResNet50Base"
+
+    latest = tf.train.latest_checkpoint(checkpoint_directory)
+    model.load_weights(latest)
+
+    freeze_var_names = ['conv1', 'conv2', 'conv3', 'conv4']
+    freeze_layers = [layer for layer in model.layers[0].layers if layer.name[:5] in freeze_var_names]
+    for layer in freeze_layers:
+        layer.trainable = False
+
+    loss = LOSS_MAP['TripletSemiHard'](margin=1.0)
+    model.compile(optimizer=optimizer, loss=loss)
+
+    # import pdb; pdb.set_trace()
+    test_dataset = get_test_dataset()
+    for i in range(150):
+        print('Cycle #{}'.format(i+1))
+        train_dataset = get_train_dataset(filter_size=40)
+        history = model.fit(
+            train_dataset,
+            epochs=8
+        )
+        if (i+1) % 50 == 0:
+            model.save_weights('ckpts/Triplet100/ResNet50Triplet_#{}'.format(i+1))
+    model.save_weights('ckpts/Triplet100/ResNet50Triplet')
+    import pdb; pdb.set_trace()
+
+    # Evaluate the network
+    results = model.predict(test_dataset)
+
+def train_triplet_transfer_step_2():
+    model, input_name = create_full_model('ResNet50')
+    model.summary()
+
+    optimizer = OPTIMIZER_MAP['Adam'](0.001)
+
+    checkpoint_directory = "ckpts/TripletTransferTF"
+
+    latest = tf.train.latest_checkpoint(checkpoint_directory)
+    model.load_weights(latest)
+
+    freeze_var_names = ['conv1', 'conv2', 'conv3', 'conv4']
+    freeze_layers = [layer for layer in model.layers[0].layers if layer.name[:5] in freeze_var_names]
+    for layer in freeze_layers:
+        layer.trainable = False
+
+    loss = LOSS_MAP['TripletSemiHard'](margin=10.0)
+    model.compile(optimizer=optimizer, loss=loss)
+
+    # import pdb; pdb.set_trace()
+    test_dataset = get_test_dataset()
+    for i in range(100):
+        print('Cycle #{}'.format(i+1))
+        train_dataset = get_train_dataset(filter_size=40)
+        history = model.fit(
+            train_dataset,
+            epochs=8
+        )
+        if (i+1) % 50 == 0:
+            model.save_weights('ckpts/Triplet10/ResNet50Triplet_#{}'.format(i+1))
+    model.save_weights('ckpts/Triplet10/ResNet50Triplet')
+    import pdb; pdb.set_trace()
+
+    # Evaluate the network
+    results = model.predict(test_dataset)
 
 
 
@@ -163,4 +258,4 @@ if __name__ == "__main__":
 
     # estimator.predict(input_fn=get_eval_input_fn(input_name))
 
-    train_triplet()
+    train_triplet_transfer_step_2()
