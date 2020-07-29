@@ -12,24 +12,33 @@ from qahirah import CAIRO, Colour, Vector
 class VisGen:
     """An character image generator for a specific font face.
     
-    To use:
+    Initialization:
         >>> vg = VisGen(font_size=28, image_size=36, \
                         font_name="Noto Sans CJK SC", out_dir="test_out")
-        >>> vg.visualize_range(start='\u6400', end='\u64ff')
+    Configurations:
         >>> vg.font_name = "Noto Serif CJK SC"
         >>> vg.font_size = 24
         >>> vg.font_style = "SemiBold"
         >>> vg.antialias = "Best"
         >>> vg.grayscale = True
+    Visualize single character:
         >>> vg.visualize_single('\u6400')
-
+    Visualize code point in specific range:
+        >>> vg.visualize_range(start='\u6400', end='\u64ff')
+    Generate dataset from file:
+        >>> vg.generate_dataset_from_file('source/dataset.txt', \
+        >>>     font_styles=['Bold', 'Regular'], \
+        >>>     antialiases=['None', 'Default'])
+    Split into train and test dataset:
+        >>> vg.train_test_split(num_test=200)
     """
 
     def __init__(self, font_size=16, image_size=20,
                  font_name="Noto Sans CJK SC", font_style=None,
                  antialias="Default", out_dir="img_out", grayscale=False):
-        """Store info about font_size, image_size, out_dir.
-        Search and find specified font_name.
+        """Store info about font_size, image_size, out_dir. Search and find
+        specified font_name. Set font weight (Regular, Bold, Semi-bold ...).
+        Set font anti-aliasing style (Best, Default, Fast...). Set output type.
 
         Args:
             font_size: Int, size of the font
@@ -66,7 +75,8 @@ class VisGen:
                          "Fast": CAIRO.ANTIALIAS_FAST,
                          "Good": CAIRO.ANTIALIAS_GOOD,
                          "None": CAIRO.ANTIALIAS_NONE}
-        self.__inv_antialias_map = {v: k for k, v in self.__antialias_map.items()}
+        self.__inv_antialias_map = {v: k for k, v in
+                                    self.__antialias_map.items()}
         self.antialias = antialias
 
         # Arg: grayscale
@@ -187,6 +197,8 @@ class VisGen:
 
         Args:
             file_path: Str, path to file for the character set.
+            font_styles: list of Str, styles of the font face to visualize
+            antialiases: list of Str, antialiasing styles to visualize
         """
         # Check if out_dir exists and create if not
         out_dir_abs = os.path.join(os.getcwd(), self.out_dir)

@@ -21,7 +21,7 @@ class Distance:
         """
 
         Args:
-            img_format: Img_Format, format of input.
+            img_format: ImgFormat, format of input.
             embedding_len: Int, length of the embedding array.
         """
 
