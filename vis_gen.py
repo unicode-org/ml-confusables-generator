@@ -10,7 +10,8 @@ import qahirah as qah
 from qahirah import CAIRO, Colour, Vector
 
 class VisGen:
-    """An character image generator for a specific font face.
+    """An character image generator for a specific font face. Also serve as
+    dataset generator.
     
     Initialization:
         >>> vg = VisGen(font_size=28, image_size=36, \
