@@ -1,3 +1,4 @@
+# Copyright 2020 Google LLC
 #!/bin/bash
 
 # Example for installing and listing new fonts

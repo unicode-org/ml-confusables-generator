@@ -1,3 +1,4 @@
+# Copyright 2020 Google LLC
 #!/bin/bash
 
 # Set up script for dependencies and required libraries
@@ -7,6 +8,10 @@
 
 apt-get -y update
 apt-get -y install libfreetype6 libcairo2 libsm6 libxext6 libfontconfig1 libxrender1 fontconfig
+
+mkdir -p qahirah
+mkdir -p pybidi
+mkdir -p python_freetype
 
 cd qahirah
 python3 setup.py install
