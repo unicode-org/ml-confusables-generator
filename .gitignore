@@ -1,0 +1,12 @@
+#*#
+*.idea*
+*.lib
+*.log
+*.pyc
+*.user
+*.vcproj
+*.vcxproj
+*.vcxproj.filters
+*.xcodeproj
+*.ipynb_checkpoints
+img_out/
