@@ -17,3 +17,4 @@ python3 setup.py install
 cd ..
 
 python3 -m pip install opencv-python tensorflow-addons==0.9.1
+
