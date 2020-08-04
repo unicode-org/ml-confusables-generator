@@ -3,10 +3,8 @@
 import argparse
 from argparse import RawDescriptionHelpFormatter
 import os
-import random
 import qahirah as qah
 from qahirah import CAIRO, Colour, Vector
-import shutil
 
 class VisualGenerator:
     """An character image generator for a specific font face. Also serve as
@@ -58,13 +56,20 @@ class VisualGenerator:
         Set font anti-aliasing style (Best, Default, Fast...). Set output type.
 
         Args:
-            font_size: Int, size of the font.
-            image_size: Int, height and width of the output image (in pixel).
-            font_name: Str, name of the font face.
-            font_style: Str, style of the font face (Thin, Bold, Regular...).
-            antialias: Str, one of "Default", "Best", "Fast", "Good", "None".
-            out_dir: Str, relative path the output directory.
-            grayscale: Bool, whether to output grayscale or rgb image.
+            font_size: Int or Float, size of the font (default 16).
+            image_size: Int or Float, height and width of the output image (in
+                pixel) (default 20).
+            font_name: Str, name of the font face (default "Noto Sans CJK SC").
+            font_style: Str, style of the font face (None, "Thin", "Bold",
+                "Regular"...) (default None). IMPORTANT: If font_style does not
+                exists, no exception will be raise and font style will default
+                to 'Regular'.
+            antialias: Str, one of "Default", "Best", "Fast", "Good", "None"
+                (default "Default").
+            out_dir: Str, relative path of the output directory (default
+                "img_out").
+            grayscale: Bool, whether to output grayscale or rgb image (default
+                False).
 
         Raises:
             (In setters)
@@ -87,6 +92,9 @@ class VisualGenerator:
         self.font_style = font_style
 
         # Arg: antialias
+        # self._antialias_map: dictionary mapping anti-aliasing style string to
+        #   Cairo antiliasing style enumeration class.
+        # self._inv_antialias_map: inverse mapping of self._antialias_map
         self._antialias_map = {"Default": CAIRO.ANTIALIAS_DEFAULT,
                          "Best": CAIRO.ANTIALIAS_BEST,
                          "Fast": CAIRO.ANTIALIAS_FAST,
@@ -99,36 +107,72 @@ class VisualGenerator:
         # Arg: grayscale
         self.grayscale = grayscale
 
+        # Set attribute _check_out_dir is a flag to avoid multiple checks on
+        # the existence of self.out_dir. For example, when function
+        # visualize_range() calls visualize_single() repeatedly, there is no
+        # need to repeated check the existence of out_dir in every call.
         self._check_out_dir = True
 
 
         
     @property
     def font_size(self):
+        """
+        Returns:
+             self._font_size: Int or Float, positive number indicating font
+                size.
+        """
         return self._font_size
     
     @property
     def image_size(self):
+        """
+        Returns:
+             self._image_size: Int or Float, positive number indicating image
+                size. This value is always larger than font_size.
+        """
         return self._image_size
 
     @property
     def font_name(self):
+        """
+        Returns:
+             self._font_name: Str, name of the font face.
+        """
         return self._font_name
 
     @property
     def font_style(self):
+        """
+        Returns:
+            self._font_style: Str, style of the font face ("Thin", "Bold",
+                "Regular"...). If not font_style set by user, returns empty
+                string "".
+        """
         return self._font_style
 
     @property
     def antialias(self):
+        """
+        Returns:
+             antialias: Str, one of "Default", "Best", "Fast", "Good", "None".
+        """
         return self._inv_antialias_map[self._antialias]
 
     @property
     def out_dir(self):
+        """
+        Returns:
+            self._out_dir: Str, relative path of the output directory.
+        """
         return self._out_dir
 
     @property
     def grayscale(self):
+        """
+        Returns:
+            self._grayscale: Bool, true if format of the output is in garyscale.
+        """
         return self._grayscale
 
 
@@ -136,17 +180,25 @@ class VisualGenerator:
     def font_size(self, font_size):
         """Check if font_size is 
             1. larger than 0
-            2. smaller image_size"""
+            2. smaller image_size
+            Otherwise, raise ValueError."""
+        if hasattr(self, '_image_size') and font_size > self.image_size:
+            raise ValueError('Expect font_size to be smaller than image_size.')
+
         if font_size <= 0:
             raise ValueError('Expect font_size to be larger than 0.')
-        elif font_size > self.image_size:
-            raise ValueError('Expect font_size to be smaller than image_size.')
         else:
             self._font_size = font_size
 
     @image_size.setter
     def image_size(self, image_size):
-        """Check if image_size is larger than 0."""
+        """Check if image_size is:
+            1. larger than 0
+            2. larger than font_size
+            Otherwise, raise ValueError."""
+        if hasattr(self, '_font_size') and image_size < self.font_size:
+            raise ValueError('Expect image_size to be larger than font_size.')
+
         if image_size <= 0:
             raise ValueError('Expect image_size to be larger than 0.')
         else:
@@ -154,8 +206,10 @@ class VisualGenerator:
     
     @font_name.setter
     def font_name(self, font_name):
-        """Check if font_name exists, if so, change to new font_name."""
-        if hasattr(self, '_font_name'):
+        """Check if font_name exists in system. If so, change self._font_name
+        to new font_name and set self._font_face as the corresponding Qahirah
+        font face. If font_name does not exists in system, raise ValueError."""
+        if hasattr(self, '_font_name') and self._font_style:
             # If the attribute _font_name is set, object is initialized. Make
             # sure font_style is also included for free type font.
             full_font_name = font_name + ':style=' + self.font_style
@@ -175,20 +229,30 @@ class VisualGenerator:
 
     @font_style.setter
     def font_style(self, font_style):
-        """Add style parameter in in freetype font name. No checking if the
-        style exists."""
+        """Add style parameter in in freetype font name and get corresponding
+        Qahirah font face. Both self._font_style and self._font_face will be
+        changed. IMPORTANT: If font_style does not exists in system, font_style
+        configuration will be ignored and regular style will be selected.
+        TODO: Check if font_style exists in system."""
         # Do nothing if font_style is None or is an empty string
         if not font_style:
-            self._font_style = ""
-            return
-        # Get freetype font and then create Cairo font
-        full_font_name = self.font_name.split(':')[0] + ':style=' + font_style
-        ft_face = self._ft.find_face(full_font_name)  # temporary
-        self._font_style = font_style
+            full_font_name = self.font_name.split(':')[0]
+            ft_face = self._ft.find_face(full_font_name)  # temporary
+        else:
+            # Get freetype font and then create Cairo font
+            full_font_name = self.font_name.split(':')[0] + ':style=' + \
+                             font_style
+            ft_face = self._ft.find_face(full_font_name)  # temporary
+
+        # Create and store new font face
+        self._font_style = font_style if font_style else ""
         self._font_face = qah.FontFace.create_for_ft_face(ft_face)
 
     @antialias.setter
     def antialias(self, antialias):
+        """If antialias style exists in Qahirah anti-aliasing styles, set
+        self._antialias as corresponding CAIRO antiliasing style enumeration
+        class."""
         if antialias not in self._antialias_map.keys():
             raise ValueError('Expect antialias to be one of "Default", "Best", '
                              '"Fast", "Good" or "None".')
@@ -196,10 +260,19 @@ class VisualGenerator:
 
     @out_dir.setter
     def out_dir(self, out_dir):
+        """Set relative path to output directory."""
         self._out_dir = out_dir
 
     @grayscale.setter
     def grayscale(self, grayscale):
+        """Set self._graycale to boolean value indicating whether to format
+        output to grayscale.
+        If grayscale is true, set self._cairo_format as CAIRO.FORMAT_A8. Set
+        self._canvas_color as CAIRO colour black. Set alpha value of
+        self._text_color to 1 (no transparency).
+        If grayscale is false, set self._cairo_format as CAIRO.FORMAT_RGB24 (24
+        bit RGB format). Set self._canvas_color as CAIRO colour white and text
+        color as black."""
         self._grayscale = grayscale
         # Configure format and color according to grayscale option
         if grayscale:
@@ -218,6 +291,12 @@ class VisualGenerator:
         follow this format:
             1. Each line represents a single code point.
             2. Each code point is in format 'U+2a665'.
+        Example file content:
+            U+4E00
+            U+4EDA
+            U+5231
+            ...
+            U+6533
 
         Args:
             file_path: Str, path to file for the character set.
@@ -332,7 +411,7 @@ class VisualGenerator:
         total_cp = ord_end - ord_start + 1
         print("Visualizing {} total code points from U+{:04X} to U+{:04X}."
               .format(total_cp, ord(start), ord(end)))
-        for cur_ord in range(ord_start, ord_end+1):
+        for cur_ord in range(ord_start, ord_end + 1):
             if (cur_ord - ord_start) % 50 == 0:
                 print("Now writing {}st code point."
                       .format(str(cur_ord - ord_start + 1)))
@@ -369,17 +448,18 @@ class VisualGenerator:
 
         # Create and configure ImageSurface
         figure_dimensions = Vector(self.image_size, self.image_size)
-        pix = qah.ImageSurface.create(format=self._cairo_format,
+        surface = qah.ImageSurface.create(format=self._cairo_format,
                                       dimensions=figure_dimensions)
 
         # Create context
-        ctx = qah.Context.create(pix)
+        ctx = qah.Context.create(surface)
 
         # Select anti-aliasing style in font options
         font_options = ctx.font_options
         font_options.antialias = self._antialias
         # Set color
         ctx.set_source_colour(self._canvas_color)
+        # Paints background
         ctx.paint()
         ctx.set_source_colour(self._text_color)
         # Set font face and size
@@ -396,83 +476,26 @@ class VisualGenerator:
         else:
             self._position_text(ctx, code_point, x, y)
 
-        # Get file name and file path
+        # Show text, flush ImageSurface
+        ctx.show_text(code_point)
+        surface.flush()
+
+        # Write to file
         filename = self._get_filename(code_point)
         file_path = os.path.join(out_dir_abs, filename)
-
-        # Show text and write to file
-        ctx.show_text(code_point)
-        pix.flush()
-        pix.write_to_png(file_path)
+        surface.write_to_png(file_path)
 
         return file_path
-
-    def train_test_split(self, num_test=100):
-        """Split dataset (already created) into training and testing dataset.
-        The number of test records needs to be specified.
-
-        Args:
-            num_test: Int, number of test records.
-
-        Returns:
-            num_train: Int, total number of training records.
-            num_test: Int, total number of test records.
-
-        Raises:
-            OSError: If no images found in out_dir.
-            ValueError: If num_test is larger than total number of records.
-            OSerror: If test data already exists.
-        """
-        # Get absolute path to train and test data directory
-        train_dir_abs = os.path.join(os.getcwd(), self.out_dir)
-        test_dir_abs = os.path.join(os.getcwd(), self.out_dir + '_test')
-
-        # Create test dir
-        self._check_create_out_dir_abs(test_dir_abs)
-
-        # Get total number of training records
-        num_total = len([name for name in os.listdir(train_dir_abs)
-                         if os.path.isfile(os.path.join(train_dir_abs, name))])
-        num_exist = len([name for name in os.listdir(test_dir_abs)
-                         if os.path.isfile(os.path.join(test_dir_abs, name))])
-        if num_total == 0:
-            raise OSError('No data found in specified out_dir.')
-        if num_test > num_total:
-            raise ValueError('Expect num_test to be smaller than total number '
-                             'of records.')
-        if num_exist != 0:
-            raise OSError('Test data already exists.')
-        num_train = num_total - num_test
-
-        # Do train/test split
-        print('Creating train test split with {} total records...'
-              .format(num_total))
-        print('Train size: {}'.format(num_train))
-        print('Test size: {}'.format(num_test))
-        filenames = random.sample(os.listdir(train_dir_abs), 100)
-        for filename in  filenames:
-            srcpath = os.path.join(train_dir_abs, filename)
-            shutil.move(srcpath, test_dir_abs)
-        print('Train test split successfully created.')
-
-        # Check number of classes in each split
-        class_train = set([name.split('_')[0] for name in
-                           os.listdir(train_dir_abs)])
-        class_test = set([name.split('_')[0] for name in
-                          os.listdir(test_dir_abs)])
-        no_missing_class = class_test.issubset(class_train)
-        print('Training dataset has {} categories.'.format(len(class_train)))
-        print('Test dataset has {} categories.'.format(len(class_test)))
-        print('All test categories in training data: {}'
-              .format(no_missing_class))
-
-        return num_train, num_test
-
-
 
     def _get_filename(self, code_point):
         """Get the filename for code point under current context. Filename is
         'CODEPOINT_FONTNAME[_FONTSTYLE]_ANTIALIAS.png'
+
+        Example file names:
+        U+4e05_Noto Sans CJK SC_SemiBold_Default.png
+        U+6bb5_Noto Sans CJK TC_DemiLight_Default.png
+        U+2f25_Noto Sans CJK SC_Default.png
+        U+6ad9_Noto Sans CJK SC_Default.png
 
         Args:
             code_point: Single Unicode code point.
@@ -510,7 +533,7 @@ class VisualGenerator:
         """Check if the given absolute path exists and create if not.
 
         Args:
-            out_dir_abs.
+            out_dir_abs: Str, absolute path to output directory.
 
         Raises:
             OSError: if specified directory cannot be created.
