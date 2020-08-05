@@ -178,10 +178,9 @@ class VisualGenerator:
 
     @font_size.setter
     def font_size(self, font_size):
-        """Check if font_size is 
-            1. larger than 0
-            2. smaller image_size
-            Otherwise, raise ValueError."""
+        """Raises ValueError if:
+            1. font_size is smaller or equal to 0
+            2. font_size is larger than image_size."""
         if hasattr(self, '_image_size') and font_size > self.image_size:
             raise ValueError('Expect font_size to be smaller than image_size.')
 
@@ -192,10 +191,9 @@ class VisualGenerator:
 
     @image_size.setter
     def image_size(self, image_size):
-        """Check if image_size is:
-            1. larger than 0
-            2. larger than font_size
-            Otherwise, raise ValueError."""
+        """Raises ValueError if:
+            1. image_size is smaller or equal to 0
+            2. image_size is smaller than font_size."""
         if hasattr(self, '_font_size') and image_size < self.font_size:
             raise ValueError('Expect image_size to be larger than font_size.')
 

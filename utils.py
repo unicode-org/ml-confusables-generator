@@ -4,26 +4,6 @@ import os
 import random
 import shutil
 
-def _check_create_dir(dir_path):
-    """Check if the given path exists and create if not.
-
-    Args: dir: Str, path to directory.
-
-    Raises:
-        OSError: if specified directory cannot be created."""
-    # Check if out_dir exists and create
-    if not os.path.isdir(dir_path):
-        print("{} does not exist, creating directory..."
-              .format(dir_path))
-        try:
-            os.mkdir(dir_path)
-        except OSError:
-            print("Creation of directory {} failed."
-                  .format(dir_path))
-            raise
-        else:
-            print("New directory successfully created.")
-
 def train_test_split(train_dir, test_dir, num_test=100):
     """Split dataset (already created) into training and testing datasets.
     Expect all data record to be in train_dir. Expect test_dir to be either
@@ -47,17 +27,15 @@ def train_test_split(train_dir, test_dir, num_test=100):
         OSError: If test data already exists.
     """
     # Get absolute path to train and test data directory
-    train_dir_abs = os.path.join(os.getcwd(), train_dir)
+    train_dir_abs = os.path.abspath(train_dir)
     test_dir_abs = os.path.join(os.getcwd(), test_dir)
 
     # Create test dir
-    _check_create_dir(test_dir_abs)
+    os.makedirs(test_dir_abs, exist_ok=True)
 
     # Get total number of training records
-    num_total = len([name for name in os.listdir(train_dir_abs)
-                     if os.path.isfile(os.path.join(train_dir_abs, name))])
-    num_exist = len([name for name in os.listdir(test_dir_abs)
-                     if os.path.isfile(os.path.join(test_dir_abs, name))])
+    num_total = len(next(os.walk(train_dir_abs))[2])
+    num_exist = len(next(os.walk(test_dir_abs))[2])
     if num_total == 0:
         raise OSError('No data found in specified out_dir.')
     if num_test > num_total:
@@ -72,7 +50,7 @@ def train_test_split(train_dir, test_dir, num_test=100):
           .format(num_total))
     print('Train size: {}'.format(num_train))
     print('Test size: {}'.format(num_test))
-    filenames = random.sample(os.listdir(train_dir_abs), 100)
+    filenames = random.sample(os.listdir(train_dir_abs), num_test)
     for filename in filenames:
         srcpath = os.path.join(train_dir_abs, filename)
         shutil.move(srcpath, test_dir_abs)
