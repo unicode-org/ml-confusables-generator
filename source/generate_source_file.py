@@ -19,54 +19,58 @@ def main():
     os.system(' unzip Unihan.zip -d Unihan/')
     os.system(' rm Unihan.zip')
 
-    # Make sure required package is installed
-    os.system(' python3 -m pip install pandas ')
-
-    # Create intermediate txt file that includes meta data
-    with open('Unihan/Unihan_RadicalStrokeCounts.txt') as f_in:
-        with open('Unihan_RadicalStrokeCounts_kRSKangXi.txt', "w+") as f_out:
-            for line in f_in:
-                if line[0] == '#' or len(line) <= 1:
-                    # Skip
-                    continue
-                elif line.split('\t')[1] == 'kRSKangXi':
-                    f_out.write(line)
-
     # Mapping from radical number to radical string
     # Radicals in Unicode range from '\u2f00' to '\u2fd6'
     # See https://en.wikipedia.org/wiki/List_of_radicals_in_Unicode
-    number_to_radical = {}
-    for i in range(214):
-        number_to_radical[i+1] = chr(int('0x2F00', 16) + i)
+    number_to_radical = {(i + 1): chr(int('0x2F00', 16) + i)
+                         for i in range(214)}
 
     # Get mapping from radical number to number of strokes in the radical
-    radical_numbers = [i+1 for i in range(214)]
-    stroke_counts = [1]*6 + [2]*23 + [3]*31 + [4]*34 + [5]*23 + [6]*29 + \
-                    [7]*20 + [8]*9 + [9]*11 + [10]*8 + [11]*6 + [12]*4 + \
-                    [13]*4 + [14]*2 + [15]*1 + [16]*2 + [17]*1
-    number_to_stoke_count = dict(zip(radical_numbers, stroke_counts))
+    # Radical number i has number_to_stroke_count[i] strokes
+    radical_numbers = [i + 1 for i in range(214)]
+    stroke_counts = [1] * 6 + [2] * 23 + [3] * 31 + [4] * 34 + [5] * 23 + \
+                    [6] * 29 + [7] * 20 + [8] * 9 + [9] * 11 + [10] * 8 + \
+                    [11] * 6 + [12] * 4 + [13] * 4 + [14] * 2 + [15] * 1 + \
+                    [16] * 2 + [17] * 1
+    number_to_stroke_count = dict(zip(radical_numbers, stroke_counts))
 
-    # Each entry in CRS_list (code point radical stroke list) is:
+    # Each entry in codepoint_radical_stroke_list is:
     # (code_point, character, radical_number, radical, radical_stroke_count,
     # remaining_stroke_count)
-    CRS_list = []
-    with open('Unihan_RadicalStrokeCounts_kRSKangXi.txt') as f:
-        for line in f:
-            if line[0] == '#' or len(line) <= 1:
-                continue
-            fields = line.split('\t')
-            codepoint, radical, stroke = fields[0], fields[2].split('.')[0], \
-                                         fields[2].split('.')[-1][:-1]
-            CRS_list.append((codepoint, radical, stroke))
-    CRS_list = [(crs[0], chr(int('0x'+crs[0][2:], 16)), int(crs[1]),
-                 number_to_radical[int(crs[1])],
-                 number_to_stoke_count[int(crs[1])],
-                 int(crs[2])) for crs in CRS_list]
+    codepoint_radical_stroke_list = []
 
-    # Exclude all code points after and including CJK extension B with
-    # bad coverage in Noto Sans and Noto Serif fonts.
-    CRS_list = [entry for entry in CRS_list if ord(entry[1]) <= 131072]
-    df = pd.DataFrame(CRS_list,
+    # Create intermediate txt file that includes meta data
+    with open('Unihan/Unihan_RadicalStrokeCounts.txt') as f_in:
+        for line in f_in:
+            if line[0] == '#' or len(line) <= 1:
+                # Skip if the current line is not what we are looking for
+                continue
+            elif line.split('\t')[1] == 'kRSKangXi':
+                # Read in fields separated by tabs
+                # Example for each line:
+                # U+3A16	kRSKangXi	64.9
+                fields = line.split('\t')
+
+                codepoint, radical, stroke = fields[0], \
+                                             fields[2].split('.')[0], \
+                                             fields[2].split('.')[-1][:-1]
+                # Get character for each code point
+                character = chr(int('0x' + codepoint[2:], 16))
+                # Get radical index
+                radical_index = int(radical)
+                # Get radical character for each radical index
+                radical = number_to_radical[radical_index]
+                # Get stroke count for each radical
+                radical_stroke_count = number_to_stroke_count[radical_index]
+                # Get remaining stroke count
+                remaining_stroke_count = int(stroke)
+                if ord(character) <= 131072:
+                    entry = (codepoint, character, radical_index, radical,
+                             radical_stroke_count, remaining_stroke_count)
+                    codepoint_radical_stroke_list.append(entry)
+
+    # Build pandas DataFrame for data analysis
+    df = pd.DataFrame(codepoint_radical_stroke_list,
                       columns = ['code_point', 'character', 'radical_number',
                                  'radical', 'radical_strokes',
                                  'remaining_strokes'])
@@ -96,7 +100,6 @@ def main():
 
     # ### Select character with basic and compound strokes
     # See https://en.wikipedia.org/wiki/Stroke_(CJK_character)
-
     # Add group of characters that includes all basic and compound strokes
     basic_stroke_chars = ['二', '孑', '了', '又', '口', '勺', '计', '凹', '殳',
                           '飞', '艺', '凸', '及', '队', '乃', '中', '水', '永',
@@ -185,21 +188,23 @@ def main():
     add_char_up_to(df, dataset, 4000)
     randset_4k = dataset.copy()
 
+    # Define function for storing dataset to txt file
+    def output_file(data, filename):
+        with open(filename + '.txt', 'w+') as f_out:
+            for char in data:
+                f_out.write('U+' + str(hex(ord(char)))[2:] + '\n')
+
     # Store datasets
     datasets = [charset_1k, charset_2k, charset_4k, randset_1k, randset_2k,
                 randset_4k]
     data_names = ['charset_1k', 'charset_2k', 'charset_4k', 'randset_1k',
                   'randset_2k', 'randset_4k']
     for i in range(6):
-        with open(data_names[i]+'.txt', "w+") as f_out:
-            for char in datasets[i]:
-                f_out.write('U+' + str(hex(ord(char)))[2:] + '\n')
+        output_file(datasets[i], data_names[i])
 
 
     # Als store full dataset
-    with open('full_dataset.txt', 'w+') as f_out:
-        for char in df['character']:
-            f_out.write('U+' + str(hex(ord(char)))[2:] + '\n')
+    output_file(df['character'], 'full_dataset')
 
 if __name__ == "__main__":
     main()
