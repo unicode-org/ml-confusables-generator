@@ -15,9 +15,9 @@ class Distance:
     """Generator of distance metrics for specific image format.
 
     Initialization:
-        >>> distance = Distance(img_format=ImgFormat.RGB)
+        >>> dis = Distance(img_format=ImgFormat.RGB)
     Get available distance metrics for specific image format:
-        >>> metrics = distance.get_metrics()
+        >>> metrics = dis.get_metrics()
     'metrics' is a dictionary mapping from distance name to distance function：
         >>> metrics.keys() # dict_keys(['manhattan', 'sum_squared', ...])
     Calculate distance between two image arrays:
@@ -282,29 +282,3 @@ class Distance:
         # Calculate sum squared distance
         distance = cv2.matchTemplate(img1_rgb, img2_rgb, cv2.TM_SQDIFF_NORMED)[0][0]
         return distance
-
-def calculate_from_path(metric, path1, path2):
-    """Calculate distance between the two images specified by file path.
-
-    Args:
-        metric: Function, distance metric to be used
-        path1: Str, path to the first image
-        path2: Str, path to the second image
-
-    Returns:
-        distance: Float, distance between the two images
-    """
-
-    try:
-        img1 = cv2.imread(path1)
-    except FileNotFoundError:
-        print('Image at path1 not found.')
-        raise
-
-    try:
-        img2 = cv2.imread(path2)
-    except FileNotFoundError:
-        print('Image at path2 not found.')
-        raise
-
-    return metric(img1, img2)
