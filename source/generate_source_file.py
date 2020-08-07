@@ -102,9 +102,9 @@ def data_cleansing_and_preperation(data_path):
                 # Example for each line:
                 # U+3A16	kRSKangXi	64.9
                 fields = line.split('\t')
-                codepoint, radical, stroke = fields[0], \
-                                             fields[2].split('.')[0], \
-                                             fields[2].split('.')[-1][:-1]
+                codepoint = fields[0]
+                radical = fields[2].split('.')[0]
+                stroke = fields[2].split('.')[-1][:-1]
 
                 # Get character for each code point
                 character = chr(int('0x' + codepoint[2:], 16))
