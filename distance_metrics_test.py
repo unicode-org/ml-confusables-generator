@@ -8,12 +8,36 @@ class TestVisualGenerator(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Temporary image array
-        cls.img_rgb_0 = np.zeros((32, 32, 3), dtype=np.uint8)
-        cls.img_rgb_1 = np.ones((32, 32, 3), dtype=np.uint8)
-        cls.img_gray_0 = np.zeros((32, 32), dtype=np.uint8)
-        cls.img_gray_1 = np.ones((32, 32), dtype=np.uint8)
-        cls.emb_0 = np.zeros(1000, dtype=np.float64)
-        cls.emb_1 = np.ones(1000, dtype=np.float64)
+
+        # img_rgb_0 is a 32 x 32 x 3 image with all pixels set to 0
+        cls.img_rgb_0 = np.zeros((3, 3, 3), dtype=np.uint8)
+        # img_rgb_255 is a 32 x 32 x 3 image with all pixels set to 1
+        cls.img_rgb_255 = np.ones((3, 3, 3), dtype=np.uint8) * 255
+        # img_rgb_topleft is a 32 x 32 x 3 image with a square on the top-left
+        # corner (1 x 1 x 3) set to 100
+        cls.img_rgb_topleft = cls.img_rgb_255.copy()
+        cls.img_rgb_topleft[:1, :1] = 100
+        # img_rgb_botright is a 32 x 32 x 3 image with a square on the
+        # bottom-right corner (1 x 1 x 3) set to 200
+        cls.img_rgb_botright = cls.img_rgb_255.copy()
+        cls.img_rgb_botright[2:, 2:] = 200
+
+        # img_gray_0 is a 32 x 32 image with all pixels set to 0
+        cls.img_gray_0 = np.zeros((3, 3), dtype=np.uint8)
+        # img_gray_255 is a 32 x 32 image with all pixels set to 1
+        cls.img_gray_255 = np.ones((3, 3), dtype=np.uint8) * 255
+        # img_gray_topleft is a 32 x 32 image with a square on the top-left
+        # corner (2 x 2) set to 1
+        cls.img_gray_topleft = cls.img_gray_255.copy()
+        cls.img_gray_topleft[:1, :1] = 100
+        # img_gray_botright is a 32 x 32 image with a square on the top-left
+        # corner (2 x 2) set to 1
+        cls.img_gray_botright = cls.img_gray_255.copy()
+        cls.img_gray_botright[2:, 2:] = 200
+
+        cls.emb_0 = np.zeros(3, dtype=np.float64)
+        cls.emb_1 = np.ones(3, dtype=np.float64)
+        cls.emb_123 = np.array([1, 2, 3], dtype=np.float64)
 
     def test_default_init(self):
         """Test default initialization. When default initialization value
@@ -40,93 +64,145 @@ class TestVisualGenerator(unittest.TestCase):
         # Test RGB metrics
         dis = Distance(ImgFormat.RGB)
         metrics = dis.get_metrics()
-        self.assertEqual(metrics['manhattan'](self.img_rgb_0, self.img_rgb_1),
+
+        # Test manhattan distance
+        self.assertEqual(metrics['manhattan'](self.img_rgb_0, self.img_rgb_255),
                          255.0)
-        self.assertEqual(metrics['manhattan'](self.img_rgb_1, self.img_rgb_1),
-                         0)
-        self.assertEqual(metrics['sum_squared'](self.img_rgb_0, self.img_rgb_1),
+        self.assertEqual(metrics['manhattan'](self.img_rgb_255, self.img_rgb_0),
+                         255.0)
+        self.assertAlmostEqual(metrics['manhattan'](self.img_rgb_topleft,
+                                                    self.img_rgb_botright),
+                               (55 + 155) / (3 * 3))
+        self.assertEqual(metrics['manhattan'](self.img_rgb_255,
+                                              self.img_rgb_255), 0)
+
+        # Test sum squared distance
+        self.assertEqual(metrics['sum_squared'](self.img_rgb_0,
+                                                self.img_rgb_255), 1.0)
+        self.assertEqual(metrics['sum_squared'](self.img_rgb_0,
+                                                self.img_rgb_topleft),
                          1.0)
-        self.assertEqual(metrics['sum_squared'](self.img_rgb_1, self.img_rgb_1),
-                         0)
+        self.assertAlmostEqual(metrics['sum_squared'](self.img_rgb_topleft,
+                                                      self.img_rgb_botright), 
+                               0.049633607)
+        self.assertAlmostEqual(metrics['sum_squared'](self.img_rgb_255,
+                                                      self.img_rgb_botright),
+                               0.005283143)
+        self.assertEqual(metrics['sum_squared'](self.img_rgb_255,
+                                                self.img_rgb_255), 0)
+
+        # Test cross correlation distance
         self.assertEqual(metrics['cross_correlation'](self.img_rgb_0,
-                                                      self.img_rgb_1),
-                         1.0)
-        self.assertEqual(metrics['cross_correlation'](self.img_rgb_1,
-                                                      self.img_rgb_1),
+                                                      self.img_rgb_255),
                          0)
+        self.assertAlmostEqual(metrics['cross_correlation'](
+            self.img_rgb_topleft, self.img_rgb_botright), 0.9755619)
+        self.assertAlmostEqual(metrics['cross_correlation'](
+            self.img_rgb_255, self.img_rgb_botright), 0.99759716)
+        self.assertEqual(metrics['cross_correlation'](self.img_rgb_255,
+                                                      self.img_rgb_255), 1.0)
 
         # Test exception
         with self.assertRaises(TypeError):
-            metrics['manhattan'](self.img_rgb_0.tolist(), self.img_rgb_1)
+            metrics['manhattan'](self.img_rgb_0.tolist(), self.img_rgb_255)
         with self.assertRaises(ValueError):
-            metrics['manhattan'](self.img_gray_0, self.img_rgb_1)
+            metrics['manhattan'](self.img_gray_0, self.img_rgb_255)
         with self.assertRaises(TypeError):
-            metrics['sum_squared'](self.img_rgb_0.tolist(), self.img_rgb_1)
+            metrics['sum_squared'](self.img_rgb_0.tolist(), self.img_rgb_255)
         with self.assertRaises(ValueError):
-            metrics['sum_squared'](self.img_gray_0, self.img_rgb_1)
+            metrics['sum_squared'](self.img_gray_0, self.img_rgb_255)
         with self.assertRaises(TypeError):
             metrics['cross_correlation'](self.img_rgb_0.tolist(),
-                                         self.img_rgb_1)
+                                         self.img_rgb_255)
         with self.assertRaises(ValueError):
-            metrics['cross_correlation'](self.img_gray_0, self.img_rgb_1)
+            metrics['cross_correlation'](self.img_gray_0, self.img_rgb_255)
 
 
     def test_gray_metrics(self):
         # Test gray metrics
         dis = Distance(ImgFormat.A8)
         metrics = dis.get_metrics()
-        self.assertEqual(metrics['manhattan'](self.img_gray_0, self.img_gray_1),
-                         255.0)
-        self.assertEqual(metrics['manhattan'](self.img_gray_1, self.img_gray_1),
-                         0)
-        self.assertEqual(metrics['sum_squared'](self.img_gray_0, self.img_gray_1),
-                         1.0)
-        self.assertEqual(metrics['sum_squared'](self.img_gray_1, self.img_gray_1),
-                         0)
+
+        # Test manhattan distance
+        self.assertEqual(
+            metrics['manhattan'](self.img_gray_0, self.img_gray_255), 255.0)
+        self.assertEqual(
+            metrics['manhattan'](self.img_gray_255, self.img_gray_0), 255.0)
+        self.assertEqual(
+            metrics['manhattan'](self.img_gray_topleft, self.img_gray_botright),
+            (55 + 155) / (3 * 3))
+        self.assertEqual(
+            metrics['manhattan'](self.img_gray_255, self.img_gray_255), 0)
+
+        # Test sum squared distance
+        self.assertEqual(metrics['sum_squared'](self.img_gray_0,
+                                                self.img_gray_255), 1.0)
+        self.assertAlmostEqual(metrics['sum_squared'](self.img_gray_topleft,
+                                                      self.img_gray_botright),
+                               0.049633607)
+        self.assertAlmostEqual(metrics['sum_squared'](self.img_gray_255,
+                                                      self.img_gray_botright),
+                               0.005283143)
+        self.assertEqual(metrics['sum_squared'](self.img_gray_255,
+                                                self.img_gray_255), 0)
+
+        # Test cross correlation distance
         self.assertEqual(metrics['cross_correlation'](self.img_gray_0,
-                                                      self.img_gray_1),
-                         1.0)
-        self.assertEqual(metrics['cross_correlation'](self.img_gray_1,
-                                                      self.img_gray_1),
-                         0)
+                                                      self.img_gray_255), 0)
+        self.assertAlmostEqual(metrics['cross_correlation'](
+            self.img_gray_topleft, self.img_gray_botright), 0.9755619)
+        self.assertAlmostEqual(metrics['cross_correlation'](
+            self.img_gray_255, self.img_gray_botright), 0.99759716)
+        self.assertEqual(metrics['cross_correlation'](self.img_gray_255,
+                                                      self.img_gray_255), 1.0)
 
         # Test exception
         with self.assertRaises(TypeError):
-            metrics['manhattan'](self.img_gray_0.tolist(), self.img_gray_1)
+            metrics['manhattan'](self.img_gray_0.tolist(), self.img_gray_255)
         with self.assertRaises(ValueError):
-            metrics['manhattan'](self.img_rgb_0, self.img_gray_1)
+            metrics['manhattan'](self.img_rgb_0, self.img_gray_255)
         with self.assertRaises(TypeError):
-            metrics['sum_squared'](self.img_gray_0.tolist(), self.img_gray_1)
+            metrics['sum_squared'](self.img_gray_0.tolist(), self.img_gray_255)
         with self.assertRaises(ValueError):
-            metrics['sum_squared'](self.img_rgb_0, self.img_gray_1)
+            metrics['sum_squared'](self.img_rgb_0, self.img_gray_255)
         with self.assertRaises(TypeError):
             metrics['cross_correlation'](self.img_gray_0.tolist(),
-                                         self.img_gray_1)
+                                         self.img_gray_255)
         with self.assertRaises(ValueError):
-            metrics['cross_correlation'](self.img_rgb_0, self.img_gray_1)
+            metrics['cross_correlation'](self.img_rgb_0, self.img_gray_255)
 
     def test_emb_metrics(self):
         # Test embedding metrics
         dis = Distance(ImgFormat.EMBEDDINGS)
         metrics = dis.get_metrics()
+
+        # Test manhattan distance
         self.assertEqual(metrics['manhattan'](self.emb_0, self.emb_1),
-                         1000.0)
+                         3)
         self.assertEqual(metrics['manhattan'](self.emb_1, self.emb_1),
                          0)
+        self.assertAlmostEqual(metrics['manhattan'](self.emb_123, self.emb_1),
+                               3)
+        self.assertAlmostEqual(metrics['manhattan'](self.emb_0, self.emb_123),
+                               6)
+
+        # Test euclidean distance
         self.assertAlmostEqual(metrics['euclidean'](self.emb_0, self.emb_1),
-                         np.sqrt(1000))
+                         np.sqrt(3))
         self.assertEqual(metrics['euclidean'](self.emb_1, self.emb_1),
                          0)
+        self.assertAlmostEqual(metrics['euclidean'](self.emb_123, self.emb_0),
+                               np.sqrt((1 ** 2) + (2 ** 2) + (3 ** 2)))
 
         # Test exception
         with self.assertRaises(TypeError):
             metrics['manhattan'](self.emb_0.tolist(), self.emb_1)
         with self.assertRaises(ValueError):
-            metrics['manhattan'](self.emb_0, np.ones(1001))
+            metrics['manhattan'](self.emb_0, np.ones(4))
         with self.assertRaises(TypeError):
             metrics['euclidean'](self.emb_0.tolist(), self.emb_1)
         with self.assertRaises(ValueError):
-            metrics['euclidean'](self.emb_0, np.ones(1001))
+            metrics['euclidean'](self.emb_0, np.ones(4))
 
 
 if __name__ == "__main__":
