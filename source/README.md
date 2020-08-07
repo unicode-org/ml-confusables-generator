@@ -20,15 +20,14 @@ radical stroke index is gathered from Unihan database
     - randset_1k.txt: randomly selected 1000 Unicode code points.
     - randset_2k.txt: randomly selected 2000 Unicode code points.
     - randset_4k.txt: randomly selected 4000 Unicode code points.
-    - full
+    - full_dataset.txt: full dataset containing 21028 code points.
     
 ## Usage
 - Scripts:
     - `Radical-stroke_Index_Analysis.ipynb`: Open .ipynb file in Jupyter 
     Notebook, select tab Cell, then Run All. The entire script should finish 
     running in less than 1 minute. 
-    - `Radical-stroke_Index_Analysis.py`: Run `python 
-    Radical-stroke_Index_Analysis.py`
+    - `generate_source_file.py`: Run `python generate_source_file.py`
 - Source files:
 All source files can be used by VisualGenerator object in vis_gen module. 
 ```python
