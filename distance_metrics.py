@@ -60,26 +60,24 @@ class Distance:
             NotImplemented: if no functions implemented for current format.
         """
         if self.img_format == ImgFormat.RGB:
-            metrics = {
+            return {
                 'manhattan': self._manhattan_distance_rgb,
                 'sum_squared': self._sum_squared_distance_rgb,
                 'cross_correlation': self._cross_correlation_distance_rgb
             }
         elif self.img_format == ImgFormat.A1 or self.img_format == ImgFormat.A8:
-            metrics = {
+            return {
                 'manhattan': self._manhattan_distance_gray,
                 'sum_squared': self._sum_squared_distance_gray,
                 'cross_correlation': self._cross_correlation_distance_gray
             }
         elif self.img_format == ImgFormat.EMBEDDINGS:
-            metrics = {
+            return {
                 'manhattan': self._manhattan_distance_emb,
                 'euclidean': self._euclidean_distance_emb
             }
         else:
             raise NotImplemented()
-
-        return metrics
 
     def _check_image_type_and_shape(self, img1, img2, dimension):
         """Check two input images:
@@ -121,6 +119,11 @@ class Distance:
         # Check image type and shape
         self._check_image_type_and_shape(emb1, emb2, 1)
 
+        # Make sure emb1 and emb2 are of type int
+        emb1 = emb1.astype(int)
+        emb2 = emb2.astype(int)
+
+        # Calculate manhattan distance
         dis = np.absolute(emb1 - emb2)
         total_dis = np.sum(dis)
         return total_dis
@@ -139,6 +142,11 @@ class Distance:
         # Check image type and shape
         self._check_image_type_and_shape(emb1, emb2, 1)
 
+        # Make sure emb1 and emb2 are of type int
+        emb1 = emb1.astype(int)
+        emb2 = emb2.astype(int)
+
+        # Calculate euclidean distance
         total_dis = np.linalg.norm(emb1 - emb2)
         return total_dis
 
@@ -186,6 +194,10 @@ class Distance:
         """
         # Check image type and shape
         self._check_image_type_and_shape(img1, img2, 2)
+
+        # Make sure both images are of type int (not uint)
+        img1 = img1.astype(int)
+        img2 = img2.astype(int)
 
         # Calculate manhattan distance
         total_pxs = img1.shape[0] * img1.shape[1]
@@ -255,7 +267,7 @@ class Distance:
         self._check_image_type_and_shape(img1, img2, 3)
 
         # Calculate sum squared distance
-        distance = cv2.matchTemplate(img1, img2, cv2.TM_SQDIFF_NORMED)[0][0]
+        distance = cv2.matchTemplate(img1, img2, cv2.TM_CCORR_NORMED)[0][0]
         return distance
 
     def _cross_correlation_distance_gray(self, img1, img2):
@@ -280,5 +292,6 @@ class Distance:
         img2_rgb = np.stack((img2,) * 3, axis=-1)
 
         # Calculate sum squared distance
-        distance = cv2.matchTemplate(img1_rgb, img2_rgb, cv2.TM_SQDIFF_NORMED)[0][0]
+        distance = cv2.matchTemplate(img1_rgb, img2_rgb,
+                                     cv2.TM_CCORR_NORMED)[0][0]
         return distance
