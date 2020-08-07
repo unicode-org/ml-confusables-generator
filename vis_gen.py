@@ -50,7 +50,7 @@ class VisualGenerator:
 
     def __init__(self, font_size=16, image_size=20,
                  font_name="Noto Sans CJK SC", font_style=None,
-                 antialias="Default", out_dir="img_out", grayscale=False):
+                 antialias="Default", out_dir="data", grayscale=False):
         """Store info about font_size, image_size, out_dir. Search and find
         specified font_name. Set font weight (Regular, Bold, Semi-bold ...).
         Set font anti-aliasing style (Best, Default, Fast...). Set output type.
@@ -67,7 +67,7 @@ class VisualGenerator:
             antialias: Str, one of "Default", "Best", "Fast", "Good", "None"
                 (default "Default").
             out_dir: Str, relative path of the output directory (default
-                "img_out").
+                "data").
             grayscale: Bool, whether to output grayscale or rgb image (default
                 False).
 
@@ -597,7 +597,7 @@ if __name__ == "__main__":
                         nargs=1, help='Image height and width (in pixels).')
     parser.add_argument('--font_name', type=str, default="Noto Sans CJK SC",
                         required=False, nargs=1, help="Font name.")
-    parser.add_argument('--out_dir', type=str, default="img_out",
+    parser.add_argument('--out_dir', type=str, default="data",
                         required=False, nargs=1,
                         help="Relative path to output directory.")
     parser.add_argument('--code_point_range', type=str, required=True, nargs=2,
