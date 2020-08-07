@@ -266,7 +266,7 @@ class Distance:
         # Check image type and shape
         self._check_image_type_and_shape(img1, img2, 3)
 
-        # Calculate sum squared distance
+        # Calculate cross correlation distance
         distance = cv2.matchTemplate(img1, img2, cv2.TM_CCORR_NORMED)[0][0]
         return distance
 
@@ -291,7 +291,7 @@ class Distance:
         img1_rgb = np.stack((img1,) * 3, axis=-1)
         img2_rgb = np.stack((img2,) * 3, axis=-1)
 
-        # Calculate sum squared distance
+        # Calculate cross correlation distance
         distance = cv2.matchTemplate(img1_rgb, img2_rgb,
                                      cv2.TM_CCORR_NORMED)[0][0]
         return distance
