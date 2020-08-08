@@ -9,34 +9,37 @@ class TestVisualGenerator(unittest.TestCase):
     def setUpClass(cls):
         # Temporary image array
 
-        # img_rgb_0 is a 32 x 32 x 3 image with all pixels set to 0
+        # img_rgb_0 is a 3 x 3 x 3 image with all pixels set to 0
         cls.img_rgb_0 = np.zeros((3, 3, 3), dtype=np.uint8)
-        # img_rgb_255 is a 32 x 32 x 3 image with all pixels set to 1
+        # img_rgb_255 is a 3 x 3 x 3 image with all pixels set to 1
         cls.img_rgb_255 = np.ones((3, 3, 3), dtype=np.uint8) * 255
-        # img_rgb_topleft is a 32 x 32 x 3 image with a square on the top-left
+        # img_rgb_topleft is a 3 x 3 x 3 image with a square on the top-left
         # corner (1 x 1 x 3) set to 100
         cls.img_rgb_topleft = cls.img_rgb_255.copy()
-        cls.img_rgb_topleft[:1, :1] = 100
+        cls.img_rgb_topleft[0, 0, :] = 100
         # img_rgb_botright is a 32 x 32 x 3 image with a square on the
         # bottom-right corner (1 x 1 x 3) set to 200
         cls.img_rgb_botright = cls.img_rgb_255.copy()
-        cls.img_rgb_botright[2:, 2:] = 200
+        cls.img_rgb_botright[2, 2, :] = 200
 
-        # img_gray_0 is a 32 x 32 image with all pixels set to 0
+        # img_gray_0 is a 3 x 3 image with all pixels set to 0
         cls.img_gray_0 = np.zeros((3, 3), dtype=np.uint8)
-        # img_gray_255 is a 32 x 32 image with all pixels set to 1
+        # img_gray_255 is a 3 x 3 image with all pixels set to 1
         cls.img_gray_255 = np.ones((3, 3), dtype=np.uint8) * 255
-        # img_gray_topleft is a 32 x 32 image with a square on the top-left
+        # img_gray_topleft is a 3 x 3 image with a square on the top-left
         # corner (2 x 2) set to 1
         cls.img_gray_topleft = cls.img_gray_255.copy()
-        cls.img_gray_topleft[:1, :1] = 100
-        # img_gray_botright is a 32 x 32 image with a square on the top-left
+        cls.img_gray_topleft[0, 0] = 100
+        # img_gray_botright is a 3 x 3 image with a square on the top-left
         # corner (2 x 2) set to 1
         cls.img_gray_botright = cls.img_gray_255.copy()
-        cls.img_gray_botright[2:, 2:] = 200
+        cls.img_gray_botright[2, 2] = 200
 
+        # embeddings: [0, 0, 0]
         cls.emb_0 = np.zeros(3, dtype=np.float64)
+        # embeddings: [1, 1, 1]
         cls.emb_1 = np.ones(3, dtype=np.float64)
+        # embeddings: [1, 2, 3]
         cls.emb_123 = np.array([1, 2, 3], dtype=np.float64)
 
     def test_default_init(self):

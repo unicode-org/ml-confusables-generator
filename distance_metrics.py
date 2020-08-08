@@ -209,7 +209,6 @@ class Distance:
 
     def _sum_squared_distance_rgb(self, img1, img2):
         """Get normalized sum squared difference.
-        distance = sum()
 
         Args:
             img1: np.ndarray, 3d array representing the first image with shape
