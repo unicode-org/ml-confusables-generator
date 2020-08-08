@@ -47,8 +47,7 @@ class Distance:
         if img_format not in list(ImgFormat):
             raise TypeError('Expect img_format to be a member of ImgFormat '
                             'class.')
-        else:
-            self._img_format = img_format
+        self._img_format = img_format
 
     def get_metrics(self):
         """Return a dictionary of compatible distance names to functions.
@@ -65,19 +64,18 @@ class Distance:
                 'sum_squared': self._sum_squared_distance_rgb,
                 'cross_correlation': self._cross_correlation_distance_rgb
             }
-        elif self.img_format == ImgFormat.A1 or self.img_format == ImgFormat.A8:
+        if self.img_format == ImgFormat.A1 or self.img_format == ImgFormat.A8:
             return {
                 'manhattan': self._manhattan_distance_gray,
                 'sum_squared': self._sum_squared_distance_gray,
                 'cross_correlation': self._cross_correlation_distance_gray
             }
-        elif self.img_format == ImgFormat.EMBEDDINGS:
+        if self.img_format == ImgFormat.EMBEDDINGS:
             return {
                 'manhattan': self._manhattan_distance_emb,
                 'euclidean': self._euclidean_distance_emb
             }
-        else:
-            raise NotImplemented()
+        raise NotImplemented()
 
     def _check_image_type_and_shape(self, img1, img2, dimension):
         """Check two input images:

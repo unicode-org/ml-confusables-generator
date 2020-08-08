@@ -11,27 +11,27 @@ class TestVisualGenerator(unittest.TestCase):
 
         # img_rgb_0 is a 3 x 3 x 3 image with all pixels set to 0
         cls.img_rgb_0 = np.zeros((3, 3, 3), dtype=np.uint8)
-        # img_rgb_255 is a 3 x 3 x 3 image with all pixels set to 1
+        # img_rgb_255 is a 3 x 3 x 3 image with all pixels set to 255
         cls.img_rgb_255 = np.ones((3, 3, 3), dtype=np.uint8) * 255
         # img_rgb_topleft is a 3 x 3 x 3 image with a square on the top-left
-        # corner (1 x 1 x 3) set to 100
+        # corner pixel (1 x 1 x 3) set to 100
         cls.img_rgb_topleft = cls.img_rgb_255.copy()
         cls.img_rgb_topleft[0, 0, :] = 100
-        # img_rgb_botright is a 32 x 32 x 3 image with a square on the
-        # bottom-right corner (1 x 1 x 3) set to 200
+        # img_rgb_botright is a 3 x 3 x 3 image with a square on the
+        # bottom-right corner pixel (1 x 1 x 3) set to 200
         cls.img_rgb_botright = cls.img_rgb_255.copy()
         cls.img_rgb_botright[2, 2, :] = 200
 
         # img_gray_0 is a 3 x 3 image with all pixels set to 0
         cls.img_gray_0 = np.zeros((3, 3), dtype=np.uint8)
-        # img_gray_255 is a 3 x 3 image with all pixels set to 1
+        # img_gray_255 is a 3 x 3 image with all pixels set to 255
         cls.img_gray_255 = np.ones((3, 3), dtype=np.uint8) * 255
         # img_gray_topleft is a 3 x 3 image with a square on the top-left
-        # corner (2 x 2) set to 1
+        # corner pixel set to 100
         cls.img_gray_topleft = cls.img_gray_255.copy()
         cls.img_gray_topleft[0, 0] = 100
         # img_gray_botright is a 3 x 3 image with a square on the top-left
-        # corner (2 x 2) set to 1
+        # corner pixel set to 200
         cls.img_gray_botright = cls.img_gray_255.copy()
         cls.img_gray_botright[2, 2] = 200
 
@@ -75,7 +75,7 @@ class TestVisualGenerator(unittest.TestCase):
                          255.0)
         self.assertAlmostEqual(metrics['manhattan'](self.img_rgb_topleft,
                                                     self.img_rgb_botright),
-                               (55 + 155) / (3 * 3))
+                               (abs(255 - 200) + abs(255 - 155)) / (3 * 3))
         self.assertEqual(metrics['manhattan'](self.img_rgb_255,
                                               self.img_rgb_255), 0)
 
