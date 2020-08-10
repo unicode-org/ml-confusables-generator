@@ -1,10 +1,10 @@
 # Copyright (C) 2020 and later: Google, Inc.
 
 import configparser
-import tensorflow as tf
-import tensorflow_addons as tfa
 from custom_dataset import DatasetBuilder
 from custom_model import ModelBuilder
+import tensorflow as tf
+import tensorflow_addons as tfa
 
 
 class ModelTrainer:
@@ -97,8 +97,7 @@ class ModelTrainer:
         if self._TPL_OPTIMIZER not in self._OPTIMIZER_MAP.keys():
             raise ValueError("TRIPLET_TRAINING OPTIMIZER not defined.")
 
-
-    def train_calassifier(self):
+    def train_classifier(self):
         '''Train classifer according to specs in config file.'''
         self.datset_builder.ONE_HOT = True
         model, input_name = self.model_builder.create_full_model()
@@ -162,4 +161,8 @@ class ModelTrainer:
                 model.save_weights(self._TPL_CKPT_DIR + '_#{}'.format(i+1))
         model.save_weights(self._TPL_CKPT_DIR)
 
+if __name__ == "__main__":
+    mt = ModelTrainer()
+    mt.train_classifier()
 
+    mt.train_triplet_transfer()

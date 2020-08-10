@@ -8,6 +8,7 @@ import pathlib
 import tensorflow as tf
 import tensorflow_addons as tfa
 
+
 # AUTOTUNE allows TensorFlow to find a good allocation of CPU budget for
 # performance optimization
 AUTOTUNE = tf.data.experimental.AUTOTUNE

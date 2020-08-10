@@ -3,6 +3,7 @@
 import configparser
 import tensorflow as tf
 
+
 class ModelBuilder:
     def __init__(self, config_path='configs/sample_config.ini'):
         """Read and set configuration from config file (.ini file) and create
