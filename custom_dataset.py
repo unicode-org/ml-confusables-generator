@@ -256,7 +256,8 @@ class DatasetBuilder:
 
         if filter_size:
             # Filter using filter_size
-            labels = tf.constant(np.random.choice(1000, filter_size,
+            labels = tf.constant(np.random.choice(self._NUM_CLASSES,
+                                                  filter_size,
                                                   replace=False))
             ds = ds.filter(lambda img, label:
                            tf.reduce_any(tf.equal(label,labels)))

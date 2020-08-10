@@ -1,8 +1,11 @@
 # Copyright (C) 2020 and later: Google, Inc.
 
+import argparse
+from argparse import RawDescriptionHelpFormatter
 import configparser
 from custom_dataset import DatasetBuilder
 from custom_model import ModelBuilder
+import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 
@@ -99,22 +102,29 @@ class ModelTrainer:
 
     def train_classifier(self):
         '''Train classifer according to specs in config file.'''
+        # When training classifier, we uses one-hot encoding as label
         self.datset_builder.ONE_HOT = True
+
+        # Create full model using model_builder
         model, input_name = self.model_builder.create_full_model()
+        # Sanity check
         model.summary()
 
+        # Set learning rate schedule
         boundaries = self._CLS_LR_BOUNDARIES
         values = self._CLS_LR_VALUES
         lr_schedule = self._LR_SCHEDULE_MAP['PiecewiseConstantDecay'](
             boundaries=boundaries, values=values)
+        # Use learning reate schedule to create optimizer
         optimizer = self._OPTIMIZER_MAP[self._CLS_OPTIMIZER](
             learning_rate=lr_schedule)
-
+        # Create loss function
         loss = self._LOSS_MAP['CrossEntropy'](from_logits=True)
-
+        # Add accuracy metrics
         accuracy = self._METRIC_MAP['Accuracy']()
         model.compile(optimizer=optimizer, loss=loss, metrics=[accuracy])
 
+        # Build tf.estimator
         estimator = tf.keras.estimator \
             .model_to_estimator(keras_model=model, model_dir=self._CLS_CKPT_DIR)
         train_spec = tf.estimator.TrainSpec(
@@ -123,14 +133,20 @@ class ModelTrainer:
         eval_spec = tf.estimator.EvalSpec(
             input_fn=self.datset_builder.get_eval_input_fn(input_name))
 
+        # Start training
         tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
 
     def train_triplet_transfer(self):
         """Train encoder with triplet loss according to specs in config file."""
+        # When training using triplet loss, we avoid using one-hot encoding
         self.datset_builder.ONE_HOT = False
+
+        # Create full model using model_builder
         model, input_name = self.model_builder.create_full_model()
+        # Sanity check
         model.summary()
 
+        # Build optimizer
         optimizer = self._OPTIMIZER_MAP[self._TPL_OPTIMIZER](self._TPL_LR_VALUE)
 
         # Load initial weights from self._TPL_INIT_DIR
@@ -138,12 +154,14 @@ class ModelTrainer:
         latest = tf.train.latest_checkpoint(init_dir)
         model.load_weights(latest)
 
+        # Freeze specified variables
         freeze_var_names = self._TPL_FREEZE_VARS
         freeze_layers = [layer for layer in model.layers[0].layers if
                          layer.name[:5] in freeze_var_names]
         for layer in freeze_layers:
             layer.trainable = False
 
+        # Create loss function
         loss = self._LOSS_MAP['TripletSemiHard'](self._TPL_MARGIN)
         model.compile(optimizer=optimizer, loss=loss)
 
@@ -162,7 +180,29 @@ class ModelTrainer:
         model.save_weights(self._TPL_CKPT_DIR)
 
 if __name__ == "__main__":
-    mt = ModelTrainer()
-    mt.train_classifier()
+    formatter = RawDescriptionHelpFormatter
+    parser = argparse.ArgumentParser(description='Usage: \n',
+                                     formatter_class=formatter)
+    parser.add_argument('--config_file', type=str, required=True, nargs=1,
+                        help='Path to config file.')
+    parser.add_argument('--mode', type=str, required=True, nargs=1,
+                        help='The mode of training, one of "classifier" or '
+                             '"triplet".')
+    args = parser.parse_args()
 
-    mt.train_triplet_transfer()
+    # Get config file and training mode from cli
+    config_file = args.config_file
+    mode = args.mode
+
+    # Check that config file exists, if not, raise ValueError
+    if not os.path.isfile(config_file):
+        raise ValueError('Config file does not exist.')
+
+    mt = ModelTrainer(config_path=config_file)
+    if mode == "classifier":
+        mt.train_classifier()
+    elif mode == "triplet":
+        mt.train_triplet_transfer()
+    else:
+        raise ValueError('Training mode must be one of "classifier" or '
+                         '"triplet"')
