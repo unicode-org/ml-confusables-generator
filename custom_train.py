@@ -6,6 +6,7 @@ import configparser
 from custom_dataset import DatasetBuilder
 from custom_model import ModelBuilder
 import os
+import re
 import tensorflow as tf
 import tensorflow_addons as tfa
 
@@ -72,11 +73,11 @@ class ModelTrainer:
         self._CLS_MAX_STEP = config.getint('CLASSIFIER_TRAINING', 'MAX_STEP')
         self._CLS_OPTIMIZER = config.get('CLASSIFIER_TRAINING', 'OPTIMIZER')
         self._CLS_LR_BOUNDARIES = [
-            int(boundary.replace(" ", "")) for boundary in
+            int(boundary.strip()) for boundary in
             config.get('CLASSIFIER_TRAINING', 'LR_BOUNDARIES').split(',')
         ]
         self._CLS_LR_VALUES = [
-            float(value.replace(" ", "")) for value in
+            float(value.strip()) for value in
             config.get('CLASSIFIER_TRAINING', 'LR_VALUES').split(',')
         ]
 
@@ -90,7 +91,7 @@ class ModelTrainer:
         self._TPL_OPTIMIZER = config.get('TRIPLET_TRAINING', 'OPTIMIZER')
         self._TPL_LR_VALUE = config.getfloat('TRIPLET_TRAINING', 'LR_VALUE')
         self._TPL_FREEZE_VARS = [
-            var.replace(" ", "") for var in
+            var.strip() for var in
             config.get('TRIPLET_TRAINING', 'FREEZE_VARS').split(',')
         ]
 
@@ -155,10 +156,13 @@ class ModelTrainer:
         model.load_weights(latest)
 
         # Freeze specified variables
-        freeze_var_names = self._TPL_FREEZE_VARS
+        freeze_var_res = self._TPL_FREEZE_VARS
         freeze_layers = [layer for layer in model.layers[0].layers if
-                         layer.name[:5] in freeze_var_names]
+                         any(re.match(str(pattern), layer.name) for pattern in
+                             freeze_var_res)]
+        print('Freezing {} layers.'.format(str(len(freeze_layers))))
         for layer in freeze_layers:
+            print('Freezing layer {}.'.format(layer.name))
             layer.trainable = False
 
         # Create loss function
@@ -183,9 +187,9 @@ if __name__ == "__main__":
     formatter = RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description='Usage: \n',
                                      formatter_class=formatter)
-    parser.add_argument('--config_file', type=str, required=True, nargs=1,
+    parser.add_argument('--config_file', type=str, required=True,
                         help='Path to config file.')
-    parser.add_argument('--mode', type=str, required=True, nargs=1,
+    parser.add_argument('--mode', type=str, required=True,
                         help='The mode of training, one of "classifier" or '
                              '"triplet".')
     args = parser.parse_args()

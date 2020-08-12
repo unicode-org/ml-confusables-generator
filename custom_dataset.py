@@ -67,11 +67,8 @@ class DatasetBuilder:
         self._RESIZE_WIDTH = config.getint('DATA_AUG', 'RESIZE_WIDTH')
 
         # Label conversion
-        self._CLASS_NAMES = [] # Class names in the same order as in label file
-        with open(self._LABEL_FILE) as f:
-            for line in f:
-                code_point = line.split('\n')[0]
-                self._CLASS_NAMES.append(code_point)
+        self._CLASS_NAMES = [line.strip() for line in
+                             open(self._LABEL_FILE).readlines()]
         self._NUM_CLASSES = len(self._CLASS_NAMES) # Number of classes
 
     def _get_label(self, file_path):
@@ -82,10 +79,11 @@ class DatasetBuilder:
             file_path: Str, path to label file.
 
         Returns:
-            if self._ONE_HOT:
-                label: tf.Tensor, one hot encoding of label.
-            else:
-                idx: tf.Tensor, label index.
+            label (if using one-hot encoding): tf.Tensor, one hot encoding of
+                label. For example '[0,0,1,0,0]'.
+            OR
+            idx (if not using one-hot encoding): tf.Tensor, label index. For
+                example '2'.
         """
         # Convert path to file name
         file_name = tf.strings.split(file_path, os.path.sep)[-1]
@@ -110,8 +108,7 @@ class DatasetBuilder:
         # Convert compressed string to a 3D uint8 tensor
         img = tf.io.decode_png(img)
         # Convert data type to float between 0 and 1
-        img = tf.image.convert_image_dtype(img, tf.float32)
-        return img
+        return tf.image.convert_image_dtype(img, tf.float32)
 
     def _process_path(self, file_path):
         """Process file path to produce image and label tensor.
@@ -130,8 +127,8 @@ class DatasetBuilder:
         return img, label
 
     def _process_img_path(self, file_path):
-        """Similar to self._process_img_path. Do not require label path! Uses
-        first section of file name as label.
+        """Similar to self._process_path. Do not require label path! Uses file
+        name as label.
 
         Args:
             file_path: Str, path to image file.
@@ -166,6 +163,66 @@ class DatasetBuilder:
             img = tf.image.rgb_to_grayscale(img)
         return img,label
 
+    def _random_rotate(self, img, stddev):
+        """Rotate image by x degree. Variable x follows normal distribution
+        with 'stddev' as standard deviation. Truncate x to be only within plus
+        minus 2 standard deviations (re-sample if not within range). Round x
+        according to bankers rounding.
+
+        Args:
+            img: tf.Tensor, image tensor.
+            stddev: Float, standard deviation of the normal distribution.
+
+        Returns:
+            img: tf.Tensor, image after rotation.
+        """
+        # Follows normal distribution whose magnitude is more than 2
+        # standard deviations from the mean are dropped and re-picked.
+        degree = tf.random.truncated_normal(shape=[], stddev=stddev)
+        # Rounds half to even. Also known as bankers rounding.
+        degree = tf.math.round(degree)
+
+        return tfa.image.rotate(img, degree)
+
+    def _random_zoom(self, img, max_percent, stddev, img_height, img_width):
+        """Crop to zoom in on the image by x percent. Largest value of x is
+        restricted by 'max_percent'. x follows normal distribution with 'stddev'
+        as standard deviation. Truncate x to be only within plus minus 2
+        standard deviations (re-sample if not within range). Round x according
+        to bankers rounding and get absolute value.
+
+        Args:
+            img: tf.Tensor, image tensor.
+            max_percent: Float, the maximum percent to zoom in. For example, if
+                max_percent = 4.0, at most, zoom in at 96%.
+            stddev: Float, standard deviation of the normal distribution.
+            img_height: Int, height of the original image tensor.
+            img_width: Int, width of the original image tensor.
+        """
+        # Generate n crop settings, ranging from a 0% to n% crop.
+        scales = list(np.arange((100 - max_percent) / 100, 1.0, 0.01))
+        # Reverse crop settings to make sure most of the image are unchanged.
+        scales.reverse()
+        boxes = np.zeros((len(scales), 4))
+        for i, scale in enumerate(scales):
+            x1 = y1 = 0.5 - (0.5 * scale)
+            x2 = y2 = 0.5 + (0.5 * scale)
+            boxes[i] = [x1, y1, x2, y2]
+        # Get n cropped images
+        crops = tf.image.crop_and_resize([img], boxes=boxes,
+                                         box_indices=np.zeros(len(scales)),
+                                         crop_size=(img_height, img_width))
+        # I am personally shamed of this implementation here
+        # TODO: Change distribution here
+        # TODO: Add fault proof
+        idx = tf.random.truncated_normal(shape=[], stddev=stddev)
+        idx = tf.math.abs(idx)  # idx >= 0
+        idx = tf.math.round(idx)  # Bankers rounding
+        idx = tf.cast(idx, tf.dtypes.int32)
+        img = crops[idx]
+
+        return img
+
     def _augment(self, img, label):
         """Data augmentation. Two augmentation method are carried out:
             1. Random rotate: randomly rotate image by x degree. x follows
@@ -181,38 +238,15 @@ class DatasetBuilder:
             img: tf.Tensor: image tensor in type tf.float32.
             label: tf.Tensor: label tensor.
         """
-        # Randomly rotate by -3 and 3 degrees
+        # Randomly rotate by -2 to +2 standard deviations.
         if self._RANDOM_ROTATE:
-            # Follows normal distribution whose magnitude is more than 2 standard
-            # deviations from the mean are dropped and re-picked
-            degree = tf.random.truncated_normal(shape=[],
-                                                stddev=self._ROTATE_STDDEV)
-            # Rounds half to even. Also known as bankers rounding.
-            degree = tf.math.round(degree)
-            img = tfa.image.rotate(img, degree)
+            img = self._random_rotate(img, self._ROTATE_STDDEV)
 
-        # Randomly zoom in on image
+        # Randomly zoom in on image by maximum self._ZOOM_PERCENT.
         if self._RANDOM_ZOOM:
-            # Generate 5 crop settings, ranging from a 0% to n% crop.
-            scales = list(np.arange((100-self._ZOOM_PERCENT)/100, 1.0, 0.01))
-            scales.reverse()
-            boxes = np.zeros((len(scales), 4))
-            for i, scale in enumerate(scales):
-                x1 = y1 = 0.5 - (0.5 * scale)
-                x2 = y2 = 0.5 + (0.5 * scale)
-                boxes[i] = [x1, y1, x2, y2]
-            crops = tf.image.crop_and_resize([img], boxes=boxes,
-                                             box_indices=np.zeros(len(scales)),
-                                             crop_size=(self._HEIGHT,
-                                                        self._WIDTH))
-            # I am personally shamed of this implementation here
-            # TODO: Change distribution here
-            # TODO: Add fault proof
-            idx = tf.random.truncated_normal(shape=[], stddev=self._ZOOM_STDDEV)
-            idx = tf.math.abs(idx) # idx >= 0
-            idx = tf.math.round(idx) # Bankers rounding again
-            idx = tf.cast(idx, tf.dtypes.int32)
-            img = crops[idx]
+            img = self._random_zoom(img, self._ZOOM_PERCENT, self._ZOOM_STDDEV,
+                                    self._HEIGHT, self._WIDTH)
+
         return img, label
 
     def _resize(self, img, label):
@@ -268,7 +302,6 @@ class DatasetBuilder:
         ds = ds.map(self._augment, num_parallel_calls=AUTOTUNE)
         # Resizing
         ds = ds.map(self._resize, num_parallel_calls=AUTOTUNE)
-
 
         # Shuffle, batch, repeat, prefetch
         ds = ds.shuffle(buffer_size=self._SHUFFLE_BUFFER_SIZE)
@@ -406,4 +439,3 @@ if __name__ == "__main__":
     for features_batch, labels_batch in train_ds.take(1):
         print(features_batch)
         print(labels_batch)
-        # import pdb;pdb.set_trace()
