@@ -53,6 +53,7 @@ class RepresentationGenerator:
                 checkpoint
         """
         self._dataset_builder = None
+        self._model_builder = None
         self._model = None
         self.config_path = config_path
         self.out_dir = out_dir
@@ -91,8 +92,8 @@ class RepresentationGenerator:
         self._dataset_builder = DatasetBuilder(config_path=config_path,
                                                one_hot=False)
         # Get model builder and get encoder (triplet model with weights)
-        model_builder = ModelBuilder(config_path=config_path)
-        self._model = model_builder.get_encoder()
+        self._model_builder = ModelBuilder(config_path=config_path)
+        self._model = self._model_builder.get_encoder()
 
         # Set self._config_path
         self._config_path = config_path
@@ -173,7 +174,17 @@ class RepresentationGenerator:
             out_file: Str, name of the output file intended to write to.
             char_as_label: Bool, whether to use character as label. Otherwise,
                 use code points.
+
+        Raises:
+            ValueError: if codepoints and embeddings does not have the same
+                number of entries.
         """
+        # Throw exception if codepoint array and embedding array does not have
+        # the same number of elements
+        if len(codepoints) != len(embeddings):
+            raise ValueError('Expect array codepoints and embeddings to have '
+                             'the same number of elements.')
+
         # Get absolute directory path, create new folder if needed.
         out_dir_abs = os.path.abspath(self.out_dir)
         os.makedirs(out_dir_abs, exist_ok=True)
@@ -190,15 +201,22 @@ class RepresentationGenerator:
 
         # Change Unicode code point to character if specified
         if char_as_label:
-            # 'CODEPOINT_FONTNAME[_FONTSTYLE]_ANTIALIAS' -> 'CODEPOINT'
-            codepoints = [codepoint.split(' ')[0] for codepoint in codepoints]
-            # 'U+XXXX' -> char
-            codepoints = [chr(int('0x' + codepoint[2:], 16))
-                          for codepoint in codepoints]
+            try:
+                # 'CODEPOINT_FONTNAME[_FONTSTYLE]_ANTIALIAS' -> 'CODEPOINT'
+                codepoints = [codepoint.split('_')[0] for
+                              codepoint in codepoints]
+                # 'U+XXXX' -> char
+                codepoints = [chr(int('0x' + codepoint[2:], 16))
+                              for codepoint in codepoints]
+            except:
+                print('All entries of codepoints array must be in format: '
+                      'CODEPOINT_FONTNAME[_FONTSTYLE]_ANTIALIAS. Example: '
+                      'U+4eba_Noto Sans CJK SC_Default.')
+                raise
 
         # Write labels
         print("Writing labels to file {}...".format(out_file_meta_abs))
-        with open("test_meta.tsv", "w+") as f_out:
+        with open(out_file_meta_abs, "w+") as f_out:
             for label in codepoints:
                 f_out.write(label)
                 f_out.write('\n')
