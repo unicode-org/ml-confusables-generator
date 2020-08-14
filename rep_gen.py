@@ -1,7 +1,7 @@
 # Copyright (C) 2020 and later: Google, Inc.
 
-from custom_dataset import DatasetBuilder
-from custom_model import ModelBuilder
+from dataset_builder import DatasetBuilder
+from model_builder import ModelBuilder
 import numpy as np
 import os
 
