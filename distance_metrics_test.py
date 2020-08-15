@@ -69,56 +69,53 @@ class TestVisualGenerator(unittest.TestCase):
         metrics = dis.get_metrics()
 
         # Test manhattan distance
-        self.assertEqual(metrics['manhattan'](self.img_rgb_0, self.img_rgb_255),
+        self.assertEqual(metrics.manhattan(self.img_rgb_0, self.img_rgb_255),
                          255.0)
-        self.assertEqual(metrics['manhattan'](self.img_rgb_255, self.img_rgb_0),
+        self.assertEqual(metrics.manhattan(self.img_rgb_255, self.img_rgb_0),
                          255.0)
-        self.assertAlmostEqual(metrics['manhattan'](self.img_rgb_topleft,
-                                                    self.img_rgb_botright),
-                               (abs(255 - 200) + abs(255 - 155)) / (3 * 3))
-        self.assertEqual(metrics['manhattan'](self.img_rgb_255,
-                                              self.img_rgb_255), 0)
+        self.assertAlmostEqual(metrics.manhattan(self.img_rgb_topleft,
+                                                 self.img_rgb_botright),
+                               (abs(255 - 200) + abs(255 - 100)) / (3 * 3))
+        self.assertEqual(metrics.manhattan(self.img_rgb_255,
+                                           self.img_rgb_255), 0)
 
         # Test sum squared distance
-        self.assertEqual(metrics['sum_squared'](self.img_rgb_0,
-                                                self.img_rgb_255), 1.0)
-        self.assertEqual(metrics['sum_squared'](self.img_rgb_0,
-                                                self.img_rgb_topleft),
-                         1.0)
-        self.assertAlmostEqual(metrics['sum_squared'](self.img_rgb_topleft,
-                                                      self.img_rgb_botright), 
+        self.assertEqual(metrics.sum_squared(self.img_rgb_0,
+                                             self.img_rgb_255), 1.0)
+        self.assertEqual(metrics.sum_squared(self.img_rgb_0,
+                                             self.img_rgb_topleft), 1.0)
+        self.assertAlmostEqual(metrics.sum_squared(self.img_rgb_topleft,
+                                                   self.img_rgb_botright),
                                0.049633607)
-        self.assertAlmostEqual(metrics['sum_squared'](self.img_rgb_255,
-                                                      self.img_rgb_botright),
+        self.assertAlmostEqual(metrics.sum_squared(self.img_rgb_255,
+                                                   self.img_rgb_botright),
                                0.005283143)
-        self.assertEqual(metrics['sum_squared'](self.img_rgb_255,
-                                                self.img_rgb_255), 0)
+        self.assertEqual(metrics.sum_squared(self.img_rgb_255,
+                                             self.img_rgb_255), 0)
 
         # Test cross correlation distance
-        self.assertEqual(metrics['cross_correlation'](self.img_rgb_0,
-                                                      self.img_rgb_255),
-                         0)
-        self.assertAlmostEqual(metrics['cross_correlation'](
+        self.assertEqual(metrics.cross_correlation(self.img_rgb_0,
+                                                   self.img_rgb_255), 0)
+        self.assertAlmostEqual(metrics.cross_correlation(
             self.img_rgb_topleft, self.img_rgb_botright), 0.9755619)
-        self.assertAlmostEqual(metrics['cross_correlation'](
+        self.assertAlmostEqual(metrics.cross_correlation(
             self.img_rgb_255, self.img_rgb_botright), 0.99759716)
-        self.assertEqual(metrics['cross_correlation'](self.img_rgb_255,
-                                                      self.img_rgb_255), 1.0)
+        self.assertEqual(metrics.cross_correlation(self.img_rgb_255,
+                                                   self.img_rgb_255), 1.0)
 
         # Test exception
         with self.assertRaises(TypeError):
-            metrics['manhattan'](self.img_rgb_0.tolist(), self.img_rgb_255)
+            metrics.manhattan(self.img_rgb_0.tolist(), self.img_rgb_255)
         with self.assertRaises(ValueError):
-            metrics['manhattan'](self.img_gray_0, self.img_rgb_255)
+            metrics.manhattan(self.img_gray_0, self.img_rgb_255)
         with self.assertRaises(TypeError):
-            metrics['sum_squared'](self.img_rgb_0.tolist(), self.img_rgb_255)
+            metrics.sum_squared(self.img_rgb_0.tolist(), self.img_rgb_255)
         with self.assertRaises(ValueError):
-            metrics['sum_squared'](self.img_gray_0, self.img_rgb_255)
+            metrics.sum_squared(self.img_gray_0, self.img_rgb_255)
         with self.assertRaises(TypeError):
-            metrics['cross_correlation'](self.img_rgb_0.tolist(),
-                                         self.img_rgb_255)
+            metrics.cross_correlation(self.img_rgb_0.tolist(), self.img_rgb_255)
         with self.assertRaises(ValueError):
-            metrics['cross_correlation'](self.img_gray_0, self.img_rgb_255)
+            metrics.cross_correlation(self.img_gray_0, self.img_rgb_255)
 
 
     def test_gray_metrics(self):
@@ -128,51 +125,51 @@ class TestVisualGenerator(unittest.TestCase):
 
         # Test manhattan distance
         self.assertEqual(
-            metrics['manhattan'](self.img_gray_0, self.img_gray_255), 255.0)
+            metrics.manhattan(self.img_gray_0, self.img_gray_255), 255.0)
         self.assertEqual(
-            metrics['manhattan'](self.img_gray_255, self.img_gray_0), 255.0)
+            metrics.manhattan(self.img_gray_255, self.img_gray_0), 255.0)
         self.assertEqual(
-            metrics['manhattan'](self.img_gray_topleft, self.img_gray_botright),
+            metrics.manhattan(self.img_gray_topleft, self.img_gray_botright),
             (55 + 155) / (3 * 3))
         self.assertEqual(
-            metrics['manhattan'](self.img_gray_255, self.img_gray_255), 0)
+            metrics.manhattan(self.img_gray_255, self.img_gray_255), 0)
 
         # Test sum squared distance
-        self.assertEqual(metrics['sum_squared'](self.img_gray_0,
-                                                self.img_gray_255), 1.0)
-        self.assertAlmostEqual(metrics['sum_squared'](self.img_gray_topleft,
-                                                      self.img_gray_botright),
+        self.assertEqual(metrics.sum_squared(self.img_gray_0,
+                                             self.img_gray_255), 1.0)
+        self.assertAlmostEqual(metrics.sum_squared(self.img_gray_topleft,
+                                                   self.img_gray_botright),
                                0.049633607)
-        self.assertAlmostEqual(metrics['sum_squared'](self.img_gray_255,
-                                                      self.img_gray_botright),
+        self.assertAlmostEqual(metrics.sum_squared(self.img_gray_255,
+                                                   self.img_gray_botright),
                                0.005283143)
-        self.assertEqual(metrics['sum_squared'](self.img_gray_255,
-                                                self.img_gray_255), 0)
+        self.assertEqual(metrics.sum_squared(self.img_gray_255,
+                                             self.img_gray_255), 0)
 
         # Test cross correlation distance
-        self.assertEqual(metrics['cross_correlation'](self.img_gray_0,
-                                                      self.img_gray_255), 0)
-        self.assertAlmostEqual(metrics['cross_correlation'](
+        self.assertEqual(metrics.cross_correlation(self.img_gray_0,
+                                                   self.img_gray_255), 0)
+        self.assertAlmostEqual(metrics.cross_correlation(
             self.img_gray_topleft, self.img_gray_botright), 0.9755619)
-        self.assertAlmostEqual(metrics['cross_correlation'](
+        self.assertAlmostEqual(metrics.cross_correlation(
             self.img_gray_255, self.img_gray_botright), 0.99759716)
-        self.assertEqual(metrics['cross_correlation'](self.img_gray_255,
-                                                      self.img_gray_255), 1.0)
+        self.assertEqual(metrics.cross_correlation(self.img_gray_255,
+                                                   self.img_gray_255), 1.0)
 
         # Test exception
         with self.assertRaises(TypeError):
-            metrics['manhattan'](self.img_gray_0.tolist(), self.img_gray_255)
+            metrics.manhattan(self.img_gray_0.tolist(), self.img_gray_255)
         with self.assertRaises(ValueError):
-            metrics['manhattan'](self.img_rgb_0, self.img_gray_255)
+            metrics.manhattan(self.img_rgb_0, self.img_gray_255)
         with self.assertRaises(TypeError):
-            metrics['sum_squared'](self.img_gray_0.tolist(), self.img_gray_255)
+            metrics.sum_squared(self.img_gray_0.tolist(), self.img_gray_255)
         with self.assertRaises(ValueError):
-            metrics['sum_squared'](self.img_rgb_0, self.img_gray_255)
+            metrics.sum_squared(self.img_rgb_0, self.img_gray_255)
         with self.assertRaises(TypeError):
-            metrics['cross_correlation'](self.img_gray_0.tolist(),
+            metrics.cross_correlation(self.img_gray_0.tolist(),
                                          self.img_gray_255)
         with self.assertRaises(ValueError):
-            metrics['cross_correlation'](self.img_rgb_0, self.img_gray_255)
+            metrics.cross_correlation(self.img_rgb_0, self.img_gray_255)
 
     def test_emb_metrics(self):
         # Test embedding metrics
@@ -180,32 +177,27 @@ class TestVisualGenerator(unittest.TestCase):
         metrics = dis.get_metrics()
 
         # Test manhattan distance
-        self.assertEqual(metrics['manhattan'](self.emb_0, self.emb_1),
-                         3)
-        self.assertEqual(metrics['manhattan'](self.emb_1, self.emb_1),
-                         0)
-        self.assertAlmostEqual(metrics['manhattan'](self.emb_123, self.emb_1),
-                               3)
-        self.assertAlmostEqual(metrics['manhattan'](self.emb_0, self.emb_123),
-                               6)
+        self.assertEqual(metrics.manhattan(self.emb_0, self.emb_1), 3)
+        self.assertEqual(metrics.manhattan(self.emb_1, self.emb_1), 0)
+        self.assertAlmostEqual(metrics.manhattan(self.emb_123, self.emb_1), 3)
+        self.assertAlmostEqual(metrics.manhattan(self.emb_0, self.emb_123), 6)
 
         # Test euclidean distance
-        self.assertAlmostEqual(metrics['euclidean'](self.emb_0, self.emb_1),
+        self.assertAlmostEqual(metrics.euclidean(self.emb_0, self.emb_1),
                          np.sqrt(3))
-        self.assertEqual(metrics['euclidean'](self.emb_1, self.emb_1),
-                         0)
-        self.assertAlmostEqual(metrics['euclidean'](self.emb_123, self.emb_0),
+        self.assertEqual(metrics.euclidean(self.emb_1, self.emb_1), 0)
+        self.assertAlmostEqual(metrics.euclidean(self.emb_123, self.emb_0),
                                np.sqrt((1 ** 2) + (2 ** 2) + (3 ** 2)))
 
         # Test exception
         with self.assertRaises(TypeError):
-            metrics['manhattan'](self.emb_0.tolist(), self.emb_1)
+            metrics.manhattan(self.emb_0.tolist(), self.emb_1)
         with self.assertRaises(ValueError):
-            metrics['manhattan'](self.emb_0, np.ones(4))
+            metrics.manhattan(self.emb_0, np.ones(4))
         with self.assertRaises(TypeError):
-            metrics['euclidean'](self.emb_0.tolist(), self.emb_1)
+            metrics.euclidean(self.emb_0.tolist(), self.emb_1)
         with self.assertRaises(ValueError):
-            metrics['euclidean'](self.emb_0, np.ones(4))
+            metrics.euclidean(self.emb_0, np.ones(4))
 
 
 if __name__ == "__main__":

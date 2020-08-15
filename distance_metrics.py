@@ -1,6 +1,7 @@
 # Copyright (C) 2020 and later: Google, Inc.
 
 import cv2
+from easydict import EasyDict as edict
 import enum
 import numpy as np
 
@@ -59,22 +60,22 @@ class Distance:
             NotImplemented: if no functions implemented for current format.
         """
         if self.img_format == ImgFormat.RGB:
-            return {
+            return edict({
                 'manhattan': self._manhattan_distance_rgb,
                 'sum_squared': self._sum_squared_distance_rgb,
                 'cross_correlation': self._cross_correlation_distance_rgb
-            }
+            })
         if self.img_format == ImgFormat.A1 or self.img_format == ImgFormat.A8:
-            return {
+            return edict({
                 'manhattan': self._manhattan_distance_gray,
                 'sum_squared': self._sum_squared_distance_gray,
                 'cross_correlation': self._cross_correlation_distance_gray
-            }
+            })
         if self.img_format == ImgFormat.EMBEDDINGS:
-            return {
+            return edict({
                 'manhattan': self._manhattan_distance_emb,
                 'euclidean': self._euclidean_distance_emb
-            }
+            })
         raise NotImplemented()
 
     def _check_image_type_and_shape(self, img1, img2, dimension):
