@@ -4,18 +4,19 @@ import numpy as np
 import os
 import random
 import shutil
+import string
 import time
 import unittest
 from unittest.mock import MagicMock, patch
 
 import sys
 sys.modules['tensorflow'] = MagicMock()
-sys.modules['custom_dataset'] = MagicMock()
-sys.modules['custom_model'] = MagicMock()
+sys.modules['dataset_builder'] = MagicMock()
+sys.modules['model_builder'] = MagicMock()
 
 from rep_gen import RepresentationGenerator
-import custom_dataset as mock_custom_dataset
-import custom_model as mock_custom_model
+import dataset_builder as mock_custom_dataset
+import model_builder as mock_custom_model
 
 class TestRepresentationGenerator(unittest.TestCase):
     @classmethod
@@ -86,7 +87,7 @@ class TestRepresentationGenerator(unittest.TestCase):
         self.assertEqual(rg._out_dir, self.tmp_dir)
 
     def test_get_embeddings(self):
-        # Assert that dataset_builder and
+        # Assert that dataset_builder
         rg = RepresentationGenerator()
         # Get mocked filename dataset
         mock_img = MagicMock()
@@ -97,9 +98,41 @@ class TestRepresentationGenerator(unittest.TestCase):
         with patch.object(rg._dataset_builder, 'get_filename_dataset',
                           return_value=mock_ds) as get_fd:
             codepoints, embeddings = rg.get_embeddings(img_dir=self.tmp_dir)
+
         get_fd.assert_called_with(self.tmp_dir)
         # Assert prediction is made on mock image
         rg._model.predict.assert_called_with(mock_img)
+
+        # Assert labels (filenames) are handled correctly
+        self.assertEqual(mock_label.numpy()[0].decode('utf-8').split('.')[0],
+                         codepoints[0])
+        # Assert embeddings are result of self._model.predict
+        self.assertEqual(rg._model.predict(mock_img)[0], embeddings[0])
+
+    def test_get_embeddings_filename(self):
+        """Test filename extraction process (from tf.Tensor to Str). Tensor
+        cannot contain string type content, any string by be of bytes type."""
+
+        # Assert that dataset_builder
+        rg = RepresentationGenerator()
+        # Get mocked filename dataset
+        mock_img = MagicMock()
+        mock_label = MagicMock()
+        mock_ds = [(mock_img, mock_label)]
+
+        # Get fake Tensor content
+        letters = string.ascii_uppercase
+        filename = ''.join(random.choice(letters) for _ in range(10))
+        tensor_content = [str.encode(filename + ".format")]
+
+        # Mock function get_filename_dataset.
+        with patch.object(rg._dataset_builder, 'get_filename_dataset',
+                          return_value=mock_ds) as get_fd,\
+             patch.object(mock_label, 'numpy', return_value=tensor_content):
+            codepoints, _ = rg.get_embeddings(img_dir=self.tmp_dir)
+
+        self.assertEqual(codepoints[0], filename)
+
 
     def test_write_embeddings_from_image(self):
         # Mock inputs
@@ -114,7 +147,7 @@ class TestRepresentationGenerator(unittest.TestCase):
                           return_value=(codepoints, embeddings)) as get_emb, \
              patch.object(rg, 'write_embeddings_from_list') as w_emb_f_l:
             rg.write_embeddings_from_image(img_dir=img_dir, out_file=out_file,
-                                       char_as_label=char_as_label)
+                                           char_as_label=char_as_label)
 
         get_emb.assert_called_with(img_dir=img_dir)
         w_emb_f_l.assert_called_once_with(codepoints, embeddings, out_file,
@@ -126,13 +159,54 @@ class TestRepresentationGenerator(unittest.TestCase):
         embeddings = [[random.random(), random.random()],
                       [random.random(), random.random()]]
         filename = 'test' + str(time.time())
+        vec_file = os.path.join(self.tmp_dir, filename + '_vec.tsv')
+        meta_file = os.path.join(self.tmp_dir, filename + '_meta.tsv')
 
         # Assert that:
         #   1. Output files are directed to out_dir
         #   2. Output files have the correct names
         #   3. Output files have the correct format
         #   4. Output files have the correct value
-        #   5. Argument char_as_label work as expected
+
+        # Make sure no vec_file exists in self.tmp_dir
+        if os.path.isfile(vec_file):
+            os.remove(vec_file)
+        if os.path.isfile(meta_file):
+            os.remove(meta_file)
+
+        # Write codepoints and embeddings to file
+        rg = RepresentationGenerator(out_dir=self.tmp_dir)
+        rg.write_embeddings_from_list(codepoints, embeddings, out_file=filename,
+                                      char_as_label=False)
+
+        # Read newly generated vec file
+        output_embs = np.genfromtxt(fname=vec_file, delimiter="\t")
+        # Read newly generated meta file
+        with open(meta_file,'r') as f_in:
+            output_chars = [label.strip() for label in f_in.readlines()]
+        # Check vec file content
+        self.assertTrue(np.array_equal(embeddings, output_embs))
+        # Check meta file content
+        self.assertTrue(codepoints == output_chars)
+
+        os.remove(vec_file)
+        os.remove(meta_file)
+
+
+    def test_write_embeddings_from_list_output_char(self):
+        # Use reasonable inputs
+        codepoints = ['U+4e00_additional_info', 'U+4e01_additional_info']
+        embeddings = [[random.random(), random.random()],
+                      [random.random(), random.random()]]
+        filename = 'test' + str(time.time())
+        vec_file = os.path.join(self.tmp_dir, filename + '_vec.tsv')
+        meta_file = os.path.join(self.tmp_dir, filename + '_meta.tsv')
+
+        # Make sure no vec_file exists in self.tmp_dir
+        if os.path.isfile(vec_file):
+            os.remove(vec_file)
+        if os.path.isfile(meta_file):
+            os.remove(meta_file)
 
         # Write codepoints and embeddings to file
         rg = RepresentationGenerator(out_dir=self.tmp_dir)
@@ -140,29 +214,17 @@ class TestRepresentationGenerator(unittest.TestCase):
                                       char_as_label=True)
 
         # Read newly generated vec file
-        output_embs = np.genfromtxt(
-            fname=os.path.join(self.tmp_dir, filename + '_vec.tsv'),
-            delimiter="\t")
+        output_embs = np.genfromtxt(fname=vec_file, delimiter="\t")
         # Read newly generated meta file
-        with open(os.path.join(self.tmp_dir, filename + '_meta.tsv'),'r') \
-            as f_in:
+        with open(meta_file, 'r') as f_in:
             output_chars = [label.strip() for label in f_in.readlines()]
         # Check vec file content
         self.assertTrue(np.array_equal(embeddings, output_embs))
-        # Check meta file cntent
         self.assertFalse(codepoints == output_chars)
         self.assertTrue(output_chars == ['一', '丁'])
 
-        # Write codepoints and embeddings to file
-        rg.write_embeddings_from_list(codepoints, embeddings, out_file=filename,
-                                      char_as_label=False)
-
-        # Read newly generated meta file
-        with open(os.path.join(self.tmp_dir, filename + '_meta.tsv'), 'r') \
-            as f_in:
-            output_chars = [label.strip() for label in f_in.readlines()]
-        self.assertTrue(codepoints == output_chars)
-
+        os.remove(vec_file)
+        os.remove(meta_file)
 
 
 if __name__ == "__main__":

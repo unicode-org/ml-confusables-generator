@@ -137,6 +137,25 @@ class ModelTrainer:
         # Start training
         tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
 
+    def _freeze_vars(self, model):
+        """Freeze variables in the model based on regular expressions in
+        self._TPL_FREEZE_VARS.
+
+        Args:
+            model: tf.keras.Model, the model within which variables are frozen.
+        """
+        # Get regular expressions in config file.
+        freeze_var_res = self._TPL_FREEZE_VARS
+        # Get layers that matches regular expression.
+        freeze_layers = [layer for layer in model.layers if
+                         any(re.match(str(pattern), layer.name) for pattern in
+                             freeze_var_res)]
+        # Freeze layers.
+        print('Freezing {} layers.'.format(str(len(freeze_layers))))
+        for layer in freeze_layers:
+            print('Freezing layer {}.'.format(layer.name))
+            layer.trainable = False
+
     def train_triplet_transfer(self):
         """Train encoder with triplet loss according to specs in config file."""
         # When training using triplet loss, we avoid using one-hot encoding
@@ -155,21 +174,21 @@ class ModelTrainer:
         latest = tf.train.latest_checkpoint(init_dir)
         model.load_weights(latest)
 
+        # Get ResNet50 model
+        resnet_model = model.layers[0]
         # Freeze specified variables
-        freeze_var_res = self._TPL_FREEZE_VARS
-        freeze_layers = [layer for layer in model.layers[0].layers if
-                         any(re.match(str(pattern), layer.name) for pattern in
-                             freeze_var_res)]
-        print('Freezing {} layers.'.format(str(len(freeze_layers))))
-        for layer in freeze_layers:
-            print('Freezing layer {}.'.format(layer.name))
-            layer.trainable = False
+        self._freeze_vars(resnet_model)
 
         # Create loss function
         loss = self._LOSS_MAP['TripletSemiHard'](self._TPL_MARGIN)
         model.compile(optimizer=optimizer, loss=loss)
 
         # Train triplet model
+        # In each cycle, a new training dataset with N labels are generated and
+        # training is carried out for M epochs.
+        # Total number of cycles = self._TPL_CYCLES
+        # N = self._TPL_FILTER_SIZE
+        # M = self._TPL_EPOCHS
         for i in range(self._TPL_CYCLES):
             print('Cycle #{}'.format(i+1))
             train_dataset = self.datset_builder.get_train_dataset(
