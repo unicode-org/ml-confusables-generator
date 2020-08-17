@@ -30,9 +30,10 @@ class ModelBuilder:
 
         # Model info
         self._MODEL_NAME = config.get('MODEL', 'NAME')
-        self._INPUT_SHAPE = (config.getint('MODEL', 'INPUT_DIM1'),
-                            config.getint('MODEL', 'INPUT_DIM2'),
-                            config.getint('MODEL', 'INPUT_DIM3'))
+        self._INPUT_SHAPE = [
+            int(dim.strip()) for dim in
+            config.get('MODEL', 'INPUT_SHAPE').split(',')
+        ]
         self._OUTPUT_SHAPE = config.getint('MODEL', 'OUTPUT_SHAPE')
 
         # Checkpoint info

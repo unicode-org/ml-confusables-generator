@@ -55,16 +55,21 @@ class DatasetBuilder:
                                                   'PREFETCH_BUFFER_SIZE')
 
         # Get data augmentation spec
-        self._RANDOM_ROTATE = config.getboolean('DATA_AUG', 'RANDOM_ROTATE')
-        self._ROTATE_STDDEV = config.getfloat('DATA_AUG', 'ROTATE_STDDEV')
+        self._RANDOM_ROTATE = config.getboolean('DATA_AUGMENTATION',
+                                                'RANDOM_ROTATE')
+        self._ROTATE_STDDEV = config.getfloat('DATA_AUGMENTATION',
+                                              'ROTATE_STDDEV')
 
-        self._RANDOM_ZOOM = config.getboolean('DATA_AUG', 'RANDOM_ZOOM')
-        self._ZOOM_PERCENT = config.getfloat('DATA_AUG', 'ZOOM_PERCENT')
-        self._ZOOM_STDDEV = config.getfloat('DATA_AUG', 'ZOOM_STDDEV')
+        self._RANDOM_ZOOM = config.getboolean('DATA_AUGMENTATION',
+                                              'RANDOM_ZOOM')
+        self._ZOOM_MAX_PERCENT = config.getfloat('DATA_AUGMENTATION',
+                                             'ZOOM_MAX_PERCENT')
+        self._ZOOM_STDDEV = config.getfloat('DATA_AUGMENTATION', 'ZOOM_STDDEV')
 
-        self._RESIZE = config.getboolean('DATA_AUG', 'RESIZE')
-        self._RESIZE_HEIGHT = config.getint('DATA_AUG', 'RESIZE_HEIGHT')
-        self._RESIZE_WIDTH = config.getint('DATA_AUG', 'RESIZE_WIDTH')
+        self._RESIZE = config.getboolean('DATA_AUGMENTATION', 'RESIZE')
+        self._RESIZE_HEIGHT = config.getint('DATA_AUGMENTATION',
+                                            'RESIZE_HEIGHT')
+        self._RESIZE_WIDTH = config.getint('DATA_AUGMENTATION', 'RESIZE_WIDTH')
 
         # Label conversion
         self._CLASS_NAMES = [line.strip() for line in
@@ -93,7 +98,7 @@ class DatasetBuilder:
                     stddev=self._ROTATE_STDDEV)
         random_zoom_fn = \
             partial(data_preprocessing.random_zoom,
-                    max_percent=self._ZOOM_PERCENT,
+                    max_percent=self._ZOOM_MAX_PERCENT,
                     stddev=self._ZOOM_STDDEV,
                     img_height=self._HEIGHT,
                     img_width=self._WIDTH)
