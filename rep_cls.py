@@ -13,7 +13,8 @@ class RepresentationClustering:
     """Representation (embeddings) clustering generator.
 
     Initialization:
-        >>> rc = RepCls(embedding_file='embeddings/full_data_vec.tsv', \
+        >>> rc = RepresentationClustering(
+        >>>             embedding_file='embeddings/full_data_vec.tsv', \
         >>>             label_file='embeddings/full_data_meta.tsv', \
         >>>             img_dir='data/full_data/')
     Configurations:
@@ -27,7 +28,7 @@ class RepresentationClustering:
         >>> ['裹', '裛', '裏', '裏']
     """
 
-    def _init_(self, embedding_file, label_file, img_dir, n_candidates=100,
+    def __init__(self, embedding_file, label_file, img_dir, n_candidates=100,
                  pca_dimensions=[5, 10, 20, 100, 500], img_format=ImgFormat.RGB,
                  primary_distance_type="manhattan",
                  secondary_distance_type="cross_correlation",
