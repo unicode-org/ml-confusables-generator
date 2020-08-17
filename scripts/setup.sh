@@ -8,7 +8,7 @@
 # 4. Install required fonts
 
 apt-get -y update
-apt-get -y install libfreetype6 libcairo2 libsm6 libxext6 libfontconfig1 libxrender1 fontconfig
+apt-get -y install libfreetype6 libcairo2 libsm6 libxext6 libfontconfig1 libxrender1 fontconfig libgl1-mesa-glx
 
 mkdir -p qahirah
 mkdir -p pybidi
