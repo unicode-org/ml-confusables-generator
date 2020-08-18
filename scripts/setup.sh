@@ -22,7 +22,7 @@ cd ../python_freetype
 python3 setup.py install
 cd ..
 
-python3 -m pip install opencv-python tensorflow-addons==0.9.1 pandas easydict
+python3 -m pip install opencv-python tensorflow-addons==0.9.1 pandas easydict sklearn
 
 apt-get install -y fonts-noto-cjk-extra
 
