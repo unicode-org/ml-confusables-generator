@@ -165,28 +165,45 @@ class TestRepresentationClustering(unittest.TestCase):
                                           img_dir=self.img_dir,
                                           pca_dimensions=[-1])
 
-    def test_get_confusables_for_char(self):
+    def test_get_candidate_pool_for_char(self):
         # This function is hard to test due to configurability of
         # sorting and filtering methods.
-        # We only test basic functionalities
+        # We only test basic functionality.
         rc = RepresentationClustering(embedding_file=self.embedding_file,
                                       label_file=self.label_file,
                                       img_dir=self.img_dir, n_candidates=3)
         # Change rc._reps to real embeddings
         rc._reps = [rc.embeddings]
-        confusables, distances = rc.get_confusables_for_char('\u4e00')
+        candidate_pool, distances = rc.get_candidate_pool_for_char('\u4e00')
 
         # Assert that correct number of candidates are kept before secondary
         # filtering
 
-        # Assert the character itself is not in the confusables
-        self.assertFalse('\u4e00' in confusables)
+        # Assert no more than n candidates are selected
+        self.assertLessEqual(len(candidate_pool), rc.n_candidates)
         for key, value in distances.items():
             # Assert no more than n candidates are considered
             self.assertLessEqual(len(value), rc.n_candidates)
             # Assert the closest character is itself
             self.assertEqual(value[0][0], 0)
             self.assertEqual(value[0][1], '\u4e00')
+
+    def test_filter_candidate_pool(self):
+        # This function is hard to test due to configurability of
+        # sorting and filtering methods.
+        # We only test basic functionality.
+        rc = RepresentationClustering(embedding_file=self.embedding_file,
+                                      label_file=self.label_file,
+                                      img_dir=self.img_dir, n_candidates=3)
+        # Change rc._reps to real embeddings
+        rc._reps = [rc.embeddings]
+
+        # Fake candidate pool
+        candidate_pool = set(['\u4e00', '\u4e01', '\u4e02'])
+        confusables = rc.filter_candidate_pool(candidate_pool, '\u4e00')
+
+        # Assert the character itself is not in the confusables
+        self.assertFalse('\u4e00' in confusables)
 
 
 if __name__ == "__main__":
