@@ -52,7 +52,7 @@ class TestVisualGenerator(unittest.TestCase):
         self.assertEqual(vg.antialias, 'Default')
         self.assertEqual(vg._antialias, CAIRO.ANTIALIAS_DEFAULT)
         # vg.out_dir
-        self.assertEqual(vg._out_dir, 'img_out')
+        self.assertEqual(vg._out_dir, 'data')
         # vg._grayscale
         self.assertFalse(vg._grayscale)
 

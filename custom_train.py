@@ -89,7 +89,8 @@ class ModelTrainer:
         self._TPL_FILTER_SIZE = config.getint('TRIPLET_TRAINING', 'FILTER_SIZE')
         self._TPL_MARGIN = config.getfloat('TRIPLET_TRAINING', 'MARGIN')
         self._TPL_OPTIMIZER = config.get('TRIPLET_TRAINING', 'OPTIMIZER')
-        self._TPL_LR_VALUE = config.getfloat('TRIPLET_TRAINING', 'LR_VALUE')
+        self._TPL_LR_VALUE = config.getfloat('TRIPLET_TRAINING',
+                                             'LEARNING_RATE')
         self._TPL_FREEZE_VARS = [
             var.strip() for var in
             config.get('TRIPLET_TRAINING', 'FREEZE_VARS').split(',')
