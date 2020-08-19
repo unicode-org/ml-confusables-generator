@@ -1,4 +1,5 @@
-# Copyright (C) 2020 and later: Google, Inc.
+# Copyright (C) 2020 and later: Unicode, Inc. and others.
+# License & terms of use: http://www.unicode.org/copyright.html
 
 import cv2
 import os
