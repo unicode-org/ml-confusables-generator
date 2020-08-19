@@ -1,4 +1,5 @@
-# Copyright (C) 2020 and later: Google, Inc.
+# Copyright (C) 2020 and later: Unicode, Inc. and others.
+# License & terms of use: http://www.unicode.org/copyright.html
 
 from dataset_builder import DatasetBuilder
 from model_builder import ModelBuilder

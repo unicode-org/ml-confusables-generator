@@ -1,4 +1,5 @@
-# Copyright (C) 2020 and later: Google, Inc.
+# Copyright (C) 2020 and later: Unicode, Inc. and others.
+# License & terms of use: http://www.unicode.org/copyright.html
 
 from distance_metrics import ImgFormat, Distance
 import numpy as np

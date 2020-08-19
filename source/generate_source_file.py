@@ -1,4 +1,5 @@
-# Copyright (C) 2020 and later: Google, Inc.
+# Copyright (C) 2020 and later: Unicode, Inc. and others.
+# License & terms of use: http://www.unicode.org/copyright.html
 
 """This purpose of this script is to create source .txt files. For statistical
 analysis on distribution of radicals and strokes, see Notebook script
