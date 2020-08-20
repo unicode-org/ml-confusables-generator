@@ -11,7 +11,7 @@ radical stroke index is gathered from Unihan database
 - Generation scripts:
     - `Radical-stroke_Index_Analysis.ipynb`: Jupyter Notebook for radical-stroke
     analysis and dataset selection.
-    - `Radical-stroke_Index_Analysis.py`: Produces the same result as Jupyter
+    - `generate_source_file.py`: Produces the same result as Jupyter
     Notebook file.
 - Source files:
     - charset_1k.txt: selected 1000 Unicode code points.
