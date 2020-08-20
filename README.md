@@ -27,8 +27,9 @@ of confusables using representation learning and custom distance metrics.
     1. [Main Components](#main-components)
     2. [CNN Model Training Scripts](#cnn-model-training-scripts)
     3. [Dataset Source File](#dataset-source-file)
-    4. [Unit Tests](#unit-tests)
-    5. [Utility Functions](#utility-functions-in-utilspy)
+    4. [Shell Scripts](#shell-scripts)
+    5. [Unit Tests](#unit-tests)
+    6. [Utility Functions](#utility-functions-in-utilspy)
 - [Testing](#testing)
     1. [Run All Unit Tests](#run-all-unit-tests)
     2. [Run Individual Unit Test](#run-individual-unit-test)
@@ -116,6 +117,14 @@ download `TripletTransferTF` (pre-trained model) folder into `ckpts/` directory.
 - `source/charset_*k.txt`: Selected Unicode code points.
 - `source/randset_*k.txt`: Randomly selected Unicode code points.
 - `source/full_dataset.txt`: Full dataset containing 21028 code points, used for clustering.
+
+#### Shell Scripts
+Expect all scripts to be executed in base directory. For example, `./scripts/start.sh` instead of `./start.sh`.
+- `scripts/start.sh`: Launch a Docker container with Jupyter Notebook.
+- `scripts/start_cli.sh`: Launch a Docker container with bash.
+- `scripts/setup.sh`: Should run inside the container, setting up the environment and install all packages.
+- `scritps/install_fonts.sh`: Install required fonts, included in setup.sh.
+- `scripts/download_*.sh`: Scripts for downloading pre-established data, model or embeddings from Google Drive.
 
 #### Unit Tests
 - `*_test.py`: Run `python [MODULE]_test.py` for all the unit tests for `[MODULE].py`. 
