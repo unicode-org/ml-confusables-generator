@@ -9,4 +9,5 @@
 *.vcxproj.filters
 *.xcodeproj
 *.ipynb_checkpoints
+*.DS_Store
 img_out/
