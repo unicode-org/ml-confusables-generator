@@ -2,13 +2,13 @@
 #!/bin/bash
 
 # Set up script for dependencies and required libraries
-# 1. Install libfreetype6 libcairo2
+# 1. Install required packages
 # 2. Install qahirah (cairo) wraper and dependencies
 # 3. Install other required python libraries
 # 4. Install required fonts
 
 apt-get -y update
-apt-get -y install libfreetype6 libcairo2 libsm6 libxext6 libfontconfig1 libxrender1 fontconfig libgl1-mesa-glx wget
+apt-get -y install libfreetype6 libcairo2 libsm6 libxext6 libfontconfig1 libxrender1 fontconfig libgl1-mesa-glx unzip
 
 mkdir -p qahirah
 mkdir -p pybidi
@@ -22,7 +22,7 @@ cd ../python_freetype
 python3 setup.py install
 cd ..
 
-python3 -m pip install opencv-python tensorflow-addons==0.9.1 pandas easydict sklearn
+python3 -m pip install opencv-python tensorflow-addons==0.9.1 pandas easydict sklearn gdown
 
 apt-get install -y fonts-noto-cjk-extra
 
