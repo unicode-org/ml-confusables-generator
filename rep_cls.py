@@ -333,10 +333,10 @@ class RepresentationClustering:
         for candidate in candidate_pool:
             if ord(char) == ord(candidate):
                 continue
-            if calculate_from_path(secondary_dis, self._label_img_map[char],
-                                   self._label_img_map[candidate]) <= \
-                self.secondary_filter_threshold:
-                confusables.append(candidate)
+            dis = calculate_from_path(secondary_dis, self._label_img_map[char],
+                                      self._label_img_map[candidate])
+            if dis <= self.secondary_filter_threshold:
+                confusables.append((candidate, dis))
 
         return confusables
 
@@ -361,6 +361,84 @@ class RepresentationClustering:
 
         return confusables
 
+    def write_confusables_distances_to_file(self,
+                                           in_file='source/full_dataset.txt',
+                                           out_file='confusables_dis.txt'):
+        """For the specified set of characters, obtain all their confusables
+        and write to specified file. Character set file must follow this format:
+            1. Each line represents a single code point.
+            2. Each code point is in format 'U+2a665'.
+        Example input file content:
+            U+4E00
+            U+4EDA
+            U+5231
+            ...
+            U+6533
+        Example output file content:
+            㨖: [('擹', 0.094604)]
+            㫚: [('曶', 0.0)]
+            䧹: [('雁', 0.070363656)]
+            䳭: [('鵩', 0.07849979), ('鶍', 0.08178015), ('鸊', 0.09759897)]
+
+        Args:
+            in_file: Str, path to input file. Expect input file to be a
+                collection of Unicode code points. Each code point
+            out_file: Str, path to the new file to write to.
+        """
+        # Read file to get all code points
+        with open(in_file) as fin, open(out_file, 'w+') as fout:
+            for idx, line in enumerate(fin):
+                print(idx)
+                anchor = chr(int('0x' + line.strip()[2:], 16))
+                if anchor:
+                    try:
+                        confusables = self.get_confusables_for_char(anchor)
+                    except:
+                        continue
+                    if confusables:
+                        fout.write(anchor)
+                        fout.write(": ")
+                        fout.write(str(confusables))
+                        fout.write('\n')
+
+    def write_confusables_to_file(self, in_file='source/full_dataset.txt',
+                                  out_file='confusables.txt'):
+        """For the specified set of characters, obtain all their confusables
+        and write to specified file. Character set file must follow this format:
+            1. Each line represents a single code point.
+            2. Each code point is in format 'U+2a665'.
+        Example file content:
+            U+4E00
+            U+4EDA
+            U+5231
+            ...
+            U+6533
+        Example output file content:
+            㨖: ['擹']
+            㫚: ['曶']
+            䧹: ['雁']
+            䳭: ['鵩', '鶍', '鸊']
+
+        Args:
+            in_file: Str, path to input file. Expect input file to be a
+                collection of Unicode code points. Each code point
+            out_file: Str, path to the new file to write to.
+        """
+        # Read file to get all code points
+        with open(in_file) as fin, open(out_file, 'w+') as fout:
+            for idx, line in enumerate(fin):
+                print(idx)
+                anchor = chr(int('0x' + line.strip()[2:], 16))
+                if anchor:
+                    try:
+                        confusables = self.get_confusables_for_char(anchor)
+                    except:
+                        continue
+                    if confusables:
+                        fout.write(anchor)
+                        fout.write(": ")
+                        fout.write(str([pair[0] for pair in confusables]))
+                        fout.write('\n')
 
 if __name__ == "__main__":
     formatter = RawDescriptionHelpFormatter

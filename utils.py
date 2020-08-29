@@ -1,6 +1,7 @@
 # Copyright (C) 2020 and later: Unicode, Inc. and others.
 # License & terms of use: http://www.unicode.org/copyright.html
 
+import ast
 import cv2
 import os
 import random
@@ -97,3 +98,20 @@ def train_test_split(train_dir, test_dir, num_test=100):
 
     return num_train, num_test
 
+def confusables_dis_to_confusables():
+    """Read in the content of confusables_dis.txt and make confusabels.txt."""
+    with open('confusables_dis.txt') as fin,\
+        open('confusables.txt', 'w+') as fout:
+        for line in fin:
+            # char is the anchor character
+            char = line[0]
+            # confs_ids is a list of confusable-distance tuple
+            confs_dis = ast.literal_eval(line[3:])
+            # confs is a list of confusables
+            confs = [pair[0] for pair in confs_dis]
+
+            # Write to confusables.txt
+            fout.write(char)
+            fout.write(": ")
+            fout.write(str(confs))
+            fout.write('\n')
