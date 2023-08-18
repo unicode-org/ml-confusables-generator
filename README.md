@@ -1,11 +1,11 @@
 # ML Confusables Generator
 
-A pair of confusables is a pair of characters which might be used in spoofing 
-attacks due to their visual similarity (for example ‘ν’ and ‘v’). The wide range 
-of characters supported by Unicode poses security vulnerabilities. Security 
-mechanisms listed in UTS#39 (UTS #39) use confusable data 
-(https://www.unicode.org/Public/security/latest/confusables.txt) 
-to combat such attacks. The purpose of this project is to identify novel pairs 
+A pair of confusables is a pair of characters which might be used in spoofing
+attacks due to their visual similarity (for example ‘ν’ and ‘v’). The wide range
+of characters supported by Unicode poses security vulnerabilities. Security
+mechanisms listed in UTS#39 (UTS #39) use confusable data
+(https://www.unicode.org/Public/security/latest/confusables.txt)
+to combat such attacks. The purpose of this project is to identify novel pairs
 of confusables using representation learning and custom distance metrics.
 
 ![](./pictures/confusable_pair.png)
@@ -127,7 +127,7 @@ Expect all scripts to be executed in base directory. For example, `./scripts/sta
 - `scripts/download_*.sh`: Scripts for downloading pre-established data, model or embeddings from Google Drive.
 
 #### Unit Tests
-- `*_test.py`: Run `python [MODULE]_test.py` for all the unit tests for `[MODULE].py`. 
+- `*_test.py`: Run `python [MODULE]_test.py` for all the unit tests for `[MODULE].py`.
 
 #### Utility functions (in `utils.py`)
 - `calculate_from_path`: Calculate distance between the two images specified by file path.
@@ -146,3 +146,11 @@ In root folder, run `python -m unittest discover -s . -p '*_test.py'`.
 
 ### Run Individual Unit Test
 In root folder, run `python [MODULE]_test.py`
+
+### Copyright & Licenses
+
+Copyright © 2020-2023 Unicode, Inc. Unicode and the Unicode Logo are registered trademarks of Unicode, Inc. in the United States and other countries.
+
+The project is released under [LICENSE](./LICENSE).
+
+A CLA is required to contribute to this project - please refer to the [CONTRIBUTING.md](https://github.com/unicode-org/.github/blob/main/.github/CONTRIBUTING.md) file (or start a Pull Request) for more information.
